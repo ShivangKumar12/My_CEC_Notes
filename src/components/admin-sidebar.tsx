@@ -3,6 +3,7 @@
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuItem,
@@ -10,12 +11,10 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { BookOpenCheck, FileText, GraduationCap, LayoutDashboard, Library, Users, BookCopy, Users2 } from "lucide-react"
+import { BookOpenCheck, FileText, GraduationCap, LayoutDashboard, Library, Users, BookCopy, Users2, LogOut } from "lucide-react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { ThemeToggle } from "./theme-toggle"
-import { Button } from "./ui/button"
-import UserAuthButton from "./user-auth-button"
+import { usePathname, useRouter } from "next/navigation"
+import { useApp } from "@/hooks/use-app"
 
 const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -29,7 +28,13 @@ const navItems = [
 
 export default function AdminSidebar() {
   const pathname = usePathname()
-  const { isMobile } = useSidebar()
+  const router = useRouter();
+  const { adminLogout } = useApp();
+
+  const handleLogout = () => {
+    adminLogout();
+    router.push('/admin/login');
+  }
 
   return (
     <Sidebar collapsible="icon">
@@ -48,7 +53,7 @@ export default function AdminSidebar() {
             <SidebarMenuItem key={item.href}>
               <SidebarMenuButton
                 asChild
-                isActive={pathname.startsWith(item.href)}
+                isActive={pathname === item.href || (item.href !== "/admin/dashboard" && pathname.startsWith(item.href))}
                 tooltip={{ children: item.label }}
               >
                 <Link href={item.href}>
@@ -60,14 +65,16 @@ export default function AdminSidebar() {
           ))}
         </SidebarMenu>
       </SidebarContent>
-      {isMobile && (
-        <div className="p-4 border-t">
-            <div className="flex justify-between items-center">
-                <ThemeToggle />
-                <UserAuthButton />
-            </div>
-        </div>
-      )}
+      <SidebarFooter>
+        <SidebarMenu>
+            <SidebarMenuItem>
+                <SidebarMenuButton onClick={handleLogout} tooltip={{ children: 'Logout' }}>
+                    <LogOut />
+                    <span>Logout</span>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
     </Sidebar>
   )
 }
