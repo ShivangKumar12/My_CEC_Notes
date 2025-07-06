@@ -1,9 +1,9 @@
 import Link from 'next/link';
-import { BookOpenCheck, Github, Linkedin, Twitter } from 'lucide-react';
+import { BookOpenCheck, Github, Linkedin, Instagram } from 'lucide-react';
 
 const subjects = ['Mathematics', 'Physics', 'Computer Science', 'Chemistry', 'History', 'Economics'];
 const socialLinks = [
-  { icon: Twitter, href: '#', name: 'Twitter' },
+  { icon: Instagram, href: '#', name: 'Instagram' },
   { icon: Github, href: '#', name: 'GitHub' },
   { icon: Linkedin, href: '#', name: 'LinkedIn' },
 ];
@@ -59,7 +59,10 @@ export default function Footer() {
         </div>
 
         <div className="mt-12 pt-8 border-t flex flex-col sm:flex-row justify-between items-center text-sm text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} NoteVault. All Rights Reserved.</p>
+          <div className="text-center sm:text-left">
+            <p>&copy; {new Date().getFullYear()} NoteVault. All Rights Reserved.</p>
+            <p>Designed & Developed by Shivang.</p>
+          </div>
           <div className="flex space-x-6 mt-4 sm:mt-0">
             <Link href="#" className="hover:text-primary transition-colors">Terms of Service</Link>
             <Link href="#" className="hover:text-primary transition-colors">Privacy Policy</Link>
