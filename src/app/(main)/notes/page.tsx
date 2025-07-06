@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
-import { mockNotes } from '@/lib/mock-data';
+import { useState, useMemo, useEffect } from 'react';
+import type { Note } from '@/lib/types';
 import NoteCard from '@/components/note-card';
 import { Input } from '@/components/ui/input';
 import {
@@ -15,7 +15,10 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search, ListX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import type { Note } from '@/lib/types';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
+
 
 export default function NotesPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -25,49 +28,79 @@ export default function NotesPage() {
   const [selectedBatch, setSelectedBatch] = useState('all');
   const [sortBy, setSortBy] = useState('rating'); // Default sort by rating
 
-  const notesOnly = useMemo(() => mockNotes.filter(n => n.category === 'note'), []);
-
-  const subjects = [...new Set(notesOnly.map((note) => note.subject))];
-  const semesters = [...new Set(notesOnly.map((note) => note.semester))].sort(
-    (a, b) => a - b
-  );
-  const courses = [...new Set(notesOnly.map((note) => note.course))];
-  const batches = [...new Set(notesOnly.map((note) => note.batch))].sort();
-
-  const filteredNotes = useMemo(() => {
-    return notesOnly.filter((note) => {
-      const searchMatch = searchQuery
-        ? note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          note.subject.toLowerCase().includes(searchQuery.toLowerCase())
-        : true;
-      const subjectMatch = selectedSubject !== 'all' ? note.subject === selectedSubject : true;
-      const semesterMatch = selectedSemester !== 'all'
-        ? String(note.semester) === selectedSemester
-        : true;
-      const courseMatch = selectedCourse !== 'all' ? note.course === selectedCourse : true;
-      const batchMatch = selectedBatch !== 'all' ? note.batch === selectedBatch : true;
-      return searchMatch && subjectMatch && semesterMatch && courseMatch && batchMatch;
-    });
-  }, [searchQuery, selectedSubject, selectedSemester, selectedCourse, selectedBatch, notesOnly]);
+  const [allNotes, setAllNotes] = useState<Note[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
-  const allNotesSorted = useMemo(() => {
-    const notes = [...filteredNotes];
-    switch (sortBy) {
-      case 'likes':
-        return notes.sort((a, b) => b.likes - a.likes);
-      case 'downloads':
-        return notes.sort((a, b) => b.downloads - a.downloads);
-      case 'rating':
-        return notes.sort((a, b) => b.averageRating - a.averageRating);
-      default:
-        // Return a stable sort based on creation date if no specific sort is chosen
-        return notes.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-    }
-  }, [filteredNotes, sortBy]);
+  const [subjects, setSubjects] = useState<string[]>([]);
+  const [semesters, setSemesters] = useState<number[]>([]);
+  const [courses, setCourses] = useState<string[]>([]);
+  const [batches, setBatches] = useState<string[]>([]);
+  
+  useEffect(() => {
+    const fetchMetadata = async () => {
+      const [subjectsSnap, semestersSnap, coursesSnap, batchesSnap] = await Promise.all([
+        getDocs(collection(db, 'subjects')),
+        getDocs(collection(db, 'semesters')),
+        getDocs(collection(db, 'courses')),
+        getDocs(collection(db, 'batches')),
+      ]);
+      setSubjects(subjectsSnap.docs.map(d => d.data().name).sort());
+      setSemesters(semestersSnap.docs.map(d => d.data().value).sort((a: number, b: number) => a - b));
+      setCourses(coursesSnap.docs.map(d => d.data().name).sort());
+      setBatches(batchesSnap.docs.map(d => d.data().name).sort());
+    };
+    
+    fetchMetadata();
+  }, []);
+  
+  useEffect(() => {
+    const fetchNotes = async () => {
+      setIsLoading(true);
+      try {
+        let q = query(collection(db, 'notes'), where('category', '==', 'note'));
+        
+        // Filtering
+        if (selectedSubject !== 'all') q = query(q, where('subject', '==', selectedSubject));
+        if (selectedSemester !== 'all') q = query(q, where('semester', '==', Number(selectedSemester)));
+        if (selectedCourse !== 'all') q = query(q, where('course', '==', selectedCourse));
+        if (selectedBatch !== 'all') q = query(q, where('batch', '==', selectedBatch));
+        
+        // Sorting
+        if(sortBy === 'rating') q = query(q, orderBy('averageRating', 'desc'));
+        if(sortBy === 'likes') q = query(q, orderBy('likes', 'desc'));
+        if(sortBy === 'downloads') q = query(q, orderBy('downloads', 'desc'));
 
+        const querySnapshot = await getDocs(q);
+        const notesData = querySnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt.toDate(),
+          } as Note;
+        });
+
+        // Client-side search after fetching
+        const filtered = notesData.filter(note => 
+          searchQuery ? note.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                        note.subject.toLowerCase().includes(searchQuery.toLowerCase())
+                      : true
+        );
+        
+        setAllNotes(filtered);
+      } catch (error) {
+        console.error("Error fetching notes:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchNotes();
+  }, [searchQuery, selectedSubject, selectedSemester, selectedCourse, selectedBatch, sortBy]);
+  
   const topRatedNotes = useMemo(() => {
-    return [...filteredNotes].sort((a, b) => b.averageRating - a.averageRating);
-  }, [filteredNotes]);
+    return [...allNotes].sort((a, b) => b.averageRating - a.averageRating).slice(0, 10);
+  }, [allNotes]);
 
   const resetFilters = () => {
     setSearchQuery('');
@@ -81,6 +114,20 @@ export default function NotesPage() {
   const isFiltered = searchQuery || selectedSubject !== 'all' || selectedSemester !== 'all' || selectedCourse !== 'all' || selectedBatch !== 'all';
 
   const NoteGrid = ({ notes }: { notes: Note[] }) => {
+    if (isLoading) {
+      return (
+        <>
+          {[...Array(8)].map((_, i) => (
+            <div key={i} className="space-y-4">
+              <Skeleton className="h-40 w-full" />
+              <Skeleton className="h-6 w-5/6" />
+              <Skeleton className="h-4 w-1/2" />
+            </div>
+          ))}
+        </>
+      );
+    }
+
     if (notes.length === 0) {
       return (
         <div className="text-center py-16 text-muted-foreground col-span-full">
@@ -183,7 +230,7 @@ export default function NotesPage() {
         </TabsList>
         <TabsContent value="all-notes">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            <NoteGrid notes={allNotesSorted} />
+            <NoteGrid notes={allNotes} />
           </div>
         </TabsContent>
         <TabsContent value="top-rated">

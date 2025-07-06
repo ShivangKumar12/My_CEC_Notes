@@ -1,7 +1,7 @@
+
 "use client";
 
-import { useState } from 'react';
-import { mockSemesters } from '@/lib/mock-data';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -10,18 +10,38 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { PlusCircle, Pencil, Trash2 } from 'lucide-react';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+
+interface Semester {
+  id: string;
+  value: number;
+}
 
 export default function AdminSemestersPage() {
   const { toast } = useToast();
-  const [semesters, setSemesters] = useState(mockSemesters);
+  const [semesters, setSemesters] = useState<Semester[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [currentSemester, setCurrentSemester] = useState<number | null>(null);
+  const [currentSemester, setCurrentSemester] = useState<Semester | null>(null);
   const [semesterValue, setSemesterValue] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleOpenDialog = (semester?: number) => {
+  const fetchSemesters = async () => {
+    setIsLoading(true);
+    const querySnapshot = await getDocs(collection(db, "semesters"));
+    const semestersData = querySnapshot.docs.map(doc => ({ id: doc.id, value: doc.data().value as number }));
+    setSemesters(semestersData.sort((a, b) => a.value - b.value));
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    fetchSemesters();
+  }, []);
+
+  const handleOpenDialog = (semester?: Semester) => {
     if (semester) {
       setCurrentSemester(semester);
-      setSemesterValue(String(semester));
+      setSemesterValue(String(semester.value));
     } else {
       setCurrentSemester(null);
       setSemesterValue('');
@@ -35,7 +55,7 @@ export default function AdminSemestersPage() {
     setSemesterValue('');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const newSemester = parseInt(semesterValue, 10);
     if (isNaN(newSemester) || newSemester < 1 || newSemester > 12) {
@@ -43,26 +63,38 @@ export default function AdminSemestersPage() {
       return;
     }
 
-    if (currentSemester) {
-      // Edit existing semester
-      setSemesters(semesters.map(s => s === currentSemester ? newSemester : s));
-      toast({ title: 'Success', description: 'Semester updated successfully.' });
-    } else {
-      // Add new semester
-      if (semesters.includes(newSemester)) {
-        toast({ title: 'Error', description: 'Semester already exists.', variant: 'destructive' });
-        return;
+    try {
+      if (currentSemester) {
+        // Edit existing semester
+        const semesterDoc = doc(db, 'semesters', currentSemester.id);
+        await updateDoc(semesterDoc, { value: newSemester });
+        toast({ title: 'Success', description: 'Semester updated successfully.' });
+      } else {
+        // Add new semester
+        if (semesters.find(s => s.value === newSemester)) {
+          toast({ title: 'Error', description: 'Semester already exists.', variant: 'destructive' });
+          return;
+        }
+        await addDoc(collection(db, 'semesters'), { value: newSemester });
+        toast({ title: 'Success', description: 'Semester added successfully.' });
       }
-      setSemesters([...semesters, newSemester]);
-      toast({ title: 'Success', description: 'Semester added successfully.' });
+      fetchSemesters();
+    } catch (error) {
+      toast({ title: 'Error', description: 'An error occurred.', variant: 'destructive' });
+      console.error(error);
     }
 
     handleCloseDialog();
   };
   
-  const handleDelete = (semesterToDelete: number) => {
-    setSemesters(semesters.filter(s => s !== semesterToDelete));
-    toast({ title: 'Success', description: `Semester "${semesterToDelete}" deleted.` });
+  const handleDelete = async (semesterId: string) => {
+    try {
+      await deleteDoc(doc(db, 'semesters', semesterId));
+      toast({ title: 'Success', description: `Semester deleted.` });
+      fetchSemesters();
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to delete semester.', variant: 'destructive' });
+    }
   }
 
   return (
@@ -89,21 +121,25 @@ export default function AdminSemestersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {semesters.sort((a,b) => a-b).map((semester) => (
-                <TableRow key={semester}>
-                  <TableCell className="font-medium">Semester {semester}</TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(semester)}>
-                      <Pencil className="h-4 w-4" />
-                      <span className="sr-only">Edit</span>
-                    </Button>
-                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(semester)}>
-                      <Trash2 className="h-4 w-4" />
-                      <span className="sr-only">Delete</span>
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {isLoading ? (
+                <TableRow><TableCell colSpan={2}>Loading...</TableCell></TableRow>
+              ) : (
+                semesters.map((semester) => (
+                  <TableRow key={semester.id}>
+                    <TableCell className="font-medium">Semester {semester.value}</TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(semester)}>
+                        <Pencil className="h-4 w-4" />
+                        <span className="sr-only">Edit</span>
+                      </Button>
+                      <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(semester.id)}>
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Delete</span>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>

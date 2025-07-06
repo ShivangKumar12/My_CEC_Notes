@@ -1,7 +1,7 @@
+
 "use client";
 
-import { useState } from 'react';
-import { mockCourses } from '@/lib/mock-data';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -10,18 +10,38 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { PlusCircle, Pencil, Trash2 } from 'lucide-react';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+
+interface Course {
+  id: string;
+  name: string;
+}
 
 export default function AdminCoursesPage() {
   const { toast } = useToast();
-  const [courses, setCourses] = useState(mockCourses);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [currentCourse, setCurrentCourse] = useState<string | null>(null);
+  const [currentCourse, setCurrentCourse] = useState<Course | null>(null);
   const [courseName, setCourseName] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleOpenDialog = (course?: string) => {
+  const fetchCourses = async () => {
+    setIsLoading(true);
+    const querySnapshot = await getDocs(collection(db, "courses"));
+    const coursesData = querySnapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name as string }));
+    setCourses(coursesData.sort((a, b) => a.name.localeCompare(b.name)));
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    fetchCourses();
+  }, []);
+
+  const handleOpenDialog = (course?: Course) => {
     if (course) {
       setCurrentCourse(course);
-      setCourseName(course);
+      setCourseName(course.name);
     } else {
       setCurrentCourse(null);
       setCourseName('');
@@ -35,33 +55,45 @@ export default function AdminCoursesPage() {
     setCourseName('');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!courseName.trim()) {
       toast({ title: 'Error', description: 'Course name cannot be empty.', variant: 'destructive' });
       return;
     }
 
-    if (currentCourse) {
-      // Edit existing course
-      setCourses(courses.map(s => s === currentCourse ? courseName.trim() : s));
-      toast({ title: 'Success', description: 'Course updated successfully.' });
-    } else {
-      // Add new course
-      if (courses.find(s => s.toLowerCase() === courseName.trim().toLowerCase())) {
-        toast({ title: 'Error', description: 'Course already exists.', variant: 'destructive' });
-        return;
+    try {
+      if (currentCourse) {
+        // Edit existing course
+        const courseDoc = doc(db, 'courses', currentCourse.id);
+        await updateDoc(courseDoc, { name: courseName.trim() });
+        toast({ title: 'Success', description: 'Course updated successfully.' });
+      } else {
+        // Add new course
+        if (courses.find(s => s.name.toLowerCase() === courseName.trim().toLowerCase())) {
+          toast({ title: 'Error', description: 'Course already exists.', variant: 'destructive' });
+          return;
+        }
+        await addDoc(collection(db, 'courses'), { name: courseName.trim() });
+        toast({ title: 'Success', description: 'Course added successfully.' });
       }
-      setCourses([...courses, courseName.trim()]);
-      toast({ title: 'Success', description: 'Course added successfully.' });
+      fetchCourses();
+    } catch (error) {
+      toast({ title: 'Error', description: 'An error occurred.', variant: 'destructive' });
+      console.error(error);
     }
 
     handleCloseDialog();
   };
   
-  const handleDelete = (courseToDelete: string) => {
-    setCourses(courses.filter(s => s !== courseToDelete));
-    toast({ title: 'Success', description: `Course "${courseToDelete}" deleted.` });
+  const handleDelete = async (courseId: string) => {
+    try {
+      await deleteDoc(doc(db, 'courses', courseId));
+      toast({ title: 'Success', description: `Course deleted.` });
+      fetchCourses();
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to delete course.', variant: 'destructive' });
+    }
   }
 
   return (
@@ -88,21 +120,25 @@ export default function AdminCoursesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {courses.sort().map((course) => (
-                <TableRow key={course}>
-                  <TableCell className="font-medium">{course}</TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(course)}>
-                      <Pencil className="h-4 w-4" />
-                      <span className="sr-only">Edit</span>
-                    </Button>
-                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(course)}>
-                      <Trash2 className="h-4 w-4" />
-                      <span className="sr-only">Delete</span>
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {isLoading ? (
+                <TableRow><TableCell colSpan={2}>Loading...</TableCell></TableRow>
+              ) : (
+                courses.map((course) => (
+                  <TableRow key={course.id}>
+                    <TableCell className="font-medium">{course.name}</TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(course)}>
+                        <Pencil className="h-4 w-4" />
+                        <span className="sr-only">Edit</span>
+                      </Button>
+                      <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(course.id)}>
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Delete</span>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>

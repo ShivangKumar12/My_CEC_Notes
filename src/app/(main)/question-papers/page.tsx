@@ -1,7 +1,7 @@
+
 "use client";
 
-import { useState, useMemo } from 'react';
-import { mockNotes } from '@/lib/mock-data';
+import { useState, useMemo, useEffect } from 'react';
 import NoteCard from '@/components/note-card';
 import { Input } from '@/components/ui/input';
 import {
@@ -15,6 +15,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search, ListX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { Note } from '@/lib/types';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function QuestionPapersPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -23,12 +26,56 @@ export default function QuestionPapersPage() {
   const [selectedCourse, setSelectedCourse] = useState('all');
   const [selectedBatch, setSelectedBatch] = useState('all');
 
-  const questionPapers = useMemo(() => mockNotes.filter(note => note.category === 'questionPaper'), []);
+  const [questionPapers, setQuestionPapers] = useState<Note[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const subjects = [...new Set(questionPapers.map((note) => note.subject))];
-  const semesters = [...new Set(questionPapers.map((note) => note.semester))].sort((a, b) => a - b);
-  const courses = [...new Set(questionPapers.map((note) => note.course))];
-  const batches = [...new Set(questionPapers.map((note) => note.batch))].sort();
+  const [subjects, setSubjects] = useState<string[]>([]);
+  const [semesters, setSemesters] = useState<number[]>([]);
+  const [courses, setCourses] = useState<string[]>([]);
+  const [batches, setBatches] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchMetadata = async () => {
+      const [subjectsSnap, semestersSnap, coursesSnap, batchesSnap] = await Promise.all([
+        getDocs(collection(db, 'subjects')),
+        getDocs(collection(db, 'semesters')),
+        getDocs(collection(db, 'courses')),
+        getDocs(collection(db, 'batches')),
+      ]);
+      setSubjects(subjectsSnap.docs.map(d => d.data().name).sort());
+      setSemesters(semestersSnap.docs.map(d => d.data().value).sort((a: number, b: number) => a - b));
+      setCourses(coursesSnap.docs.map(d => d.data().name).sort());
+      setBatches(batchesSnap.docs.map(d => d.data().name).sort());
+    };
+    
+    fetchMetadata();
+  }, []);
+
+  useEffect(() => {
+    const fetchPapers = async () => {
+      setIsLoading(true);
+      try {
+        const notesRef = collection(db, 'notes');
+        let q = query(notesRef, where('category', '==', 'questionPaper'));
+
+        const querySnapshot = await getDocs(q);
+        const papersData = querySnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt.toDate(),
+          } as Note;
+        });
+        setQuestionPapers(papersData);
+      } catch (error) {
+        console.error("Error fetching question papers:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchPapers();
+  }, []);
 
   const filteredPapers = useMemo(() => {
     return questionPapers.filter((note) => {
@@ -61,6 +108,19 @@ export default function QuestionPapersPage() {
   const isFiltered = searchQuery || selectedSubject !== 'all' || selectedSemester !== 'all' || selectedCourse !== 'all' || selectedBatch !== 'all';
 
   const PaperGrid = ({ papers }: { papers: Note[] }) => {
+    if (isLoading) {
+      return (
+        <>
+          {[...Array(8)].map((_, i) => (
+            <div key={i} className="space-y-4">
+              <Skeleton className="h-40 w-full" />
+              <Skeleton className="h-6 w-5/6" />
+              <Skeleton className="h-4 w-1/2" />
+            </div>
+          ))}
+        </>
+      );
+    }
     if (papers.length === 0) {
       return (
         <div className="text-center py-16 text-muted-foreground col-span-full">

@@ -1,12 +1,18 @@
+
 "use client";
 
 import React, { createContext, useState, useMemo, useEffect } from 'react';
-import type { User } from '@/lib/types';
-import { mockUsers } from '@/lib/mock-data';
+import type { UserProfile } from '@/lib/types';
+import { auth, db } from '@/lib/firebase';
+import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, signInWithEmailAndPassword, User as FirebaseUser } from 'firebase/auth';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 interface AppContextType {
-  user: User | null;
-  isAdmin: boolean | null; // null means loading/unknown, boolean means checked
+  user: FirebaseUser | null;
+  userProfile: UserProfile | null;
+  isAdmin: boolean;
+  isLoading: boolean;
   login: () => void;
   logout: () => void;
   adminLogin: (email: string, password: string) => Promise<boolean>;
@@ -15,72 +21,103 @@ interface AppContextType {
 
 export const AppContext = createContext<AppContextType | undefined>(undefined);
 
-const ADMIN_STORAGE_KEY = 'mycecnotes-admin';
-
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
-    // Check session storage on initial load
-    try {
-      const storedAdminStatus = sessionStorage.getItem(ADMIN_STORAGE_KEY);
-      if (storedAdminStatus === 'true') {
-        setIsAdmin(true);
-        setUser({ id: 'admin-user', name: 'Admin', avatarUrl: '/admin-avatar.png' });
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      setIsLoading(true);
+      if (firebaseUser) {
+        setUser(firebaseUser);
+        const userRef = doc(db, 'users', firebaseUser.uid);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          const profile = userSnap.data() as UserProfile;
+          setUserProfile(profile);
+          setIsAdmin(profile.isAdmin ?? false);
+        } else {
+          // Create new user profile in Firestore
+          const newUserProfile: UserProfile = {
+            id: firebaseUser.uid,
+            name: firebaseUser.displayName || 'Anonymous',
+            email: firebaseUser.email || '',
+            avatarUrl: firebaseUser.photoURL || '/default-avatar.png',
+            isAdmin: false,
+          };
+          await setDoc(userRef, { ...newUserProfile, createdAt: serverTimestamp() });
+          setUserProfile(newUserProfile);
+          setIsAdmin(false);
+        }
       } else {
+        setUser(null);
+        setUserProfile(null);
         setIsAdmin(false);
       }
-    } catch (e) {
-      // If sessionStorage is not available
-      setIsAdmin(false);
-    }
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  const login = () => {
-    // In a real app, this would involve an API call to Firebase Auth
-    if (!isAdmin) {
-      setUser(mockUsers[0]);
+  const login = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+      toast({ title: "Login Successful", description: "Welcome to MyCECNotes!" });
+    } catch (error) {
+      console.error("Google login error:", error);
+      toast({ title: "Login Failed", description: "Could not log in with Google.", variant: "destructive" });
     }
   };
 
-  const logout = () => {
-    if (!isAdmin) {
-      setUser(null);
+  const logout = async () => {
+    try {
+      await signOut(auth);
+      toast({ title: "Logged Out", description: "You have been successfully logged out." });
+    } catch (error) {
+      console.error("Logout error:", error);
     }
   };
   
   const adminLogin = async (email: string, password: string): Promise<boolean> => {
-    // In a real app, this would be a secure API call.
-    // This is for demonstration purposes only.
-    if (email === 'admin@mycecnotes.com' && password === 'admin123') {
-      setIsAdmin(true);
-      setUser({ id: 'admin-user', name: 'Admin', avatarUrl: '/admin-avatar.png' });
-      try {
-        sessionStorage.setItem(ADMIN_STORAGE_KEY, 'true');
-      } catch (e) { /* ignore */ }
-      return true;
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const adminUser = userCredential.user;
+      
+      const userRef = doc(db, 'users', adminUser.uid);
+      const userSnap = await getDoc(userRef);
+
+      if (userSnap.exists() && userSnap.data().isAdmin) {
+        return true;
+      } else {
+        // If user is not an admin, sign them out immediately.
+        await signOut(auth);
+        return false;
+      }
+    } catch (error) {
+      console.error("Admin login error:", error);
+      return false;
     }
-    return false;
   };
   
-  const adminLogout = () => {
-    setIsAdmin(false);
-    setUser(null);
-    try {
-      sessionStorage.removeItem(ADMIN_STORAGE_KEY);
-    } catch (e) { /* ignore */ }
+  const adminLogout = async () => {
+    await logout();
   };
-
 
   const contextValue = useMemo(() => ({
     user,
+    userProfile,
     isAdmin,
+    isLoading,
     login,
     logout,
     adminLogin,
     adminLogout,
-  }), [user, isAdmin]);
+  }), [user, userProfile, isAdmin, isLoading]);
 
   return (
     <AppContext.Provider value={contextValue}>

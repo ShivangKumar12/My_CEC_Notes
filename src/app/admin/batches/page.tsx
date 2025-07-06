@@ -1,7 +1,7 @@
+
 "use client";
 
-import { useState } from 'react';
-import { mockBatches } from '@/lib/mock-data';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -10,18 +10,38 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { PlusCircle, Pencil, Trash2 } from 'lucide-react';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+
+interface Batch {
+  id: string;
+  name: string;
+}
 
 export default function AdminBatchesPage() {
   const { toast } = useToast();
-  const [batches, setBatches] = useState(mockBatches);
+  const [batches, setBatches] = useState<Batch[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [currentBatch, setCurrentBatch] = useState<string | null>(null);
+  const [currentBatch, setCurrentBatch] = useState<Batch | null>(null);
   const [batchName, setBatchName] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleOpenDialog = (batch?: string) => {
+  const fetchBatches = async () => {
+    setIsLoading(true);
+    const querySnapshot = await getDocs(collection(db, "batches"));
+    const batchesData = querySnapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name as string }));
+    setBatches(batchesData.sort((a, b) => a.name.localeCompare(b.name)));
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    fetchBatches();
+  }, []);
+
+  const handleOpenDialog = (batch?: Batch) => {
     if (batch) {
       setCurrentBatch(batch);
-      setBatchName(batch);
+      setBatchName(batch.name);
     } else {
       setCurrentBatch(null);
       setBatchName('');
@@ -35,33 +55,45 @@ export default function AdminBatchesPage() {
     setBatchName('');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!batchName.trim()) {
       toast({ title: 'Error', description: 'Batch name cannot be empty.', variant: 'destructive' });
       return;
     }
 
-    if (currentBatch) {
-      // Edit existing batch
-      setBatches(batches.map(s => s === currentBatch ? batchName.trim() : s));
-      toast({ title: 'Success', description: 'Batch updated successfully.' });
-    } else {
-      // Add new batch
-      if (batches.find(s => s.toLowerCase() === batchName.trim().toLowerCase())) {
-        toast({ title: 'Error', description: 'Batch already exists.', variant: 'destructive' });
-        return;
+    try {
+      if (currentBatch) {
+        // Edit existing batch
+        const batchDoc = doc(db, 'batches', currentBatch.id);
+        await updateDoc(batchDoc, { name: batchName.trim() });
+        toast({ title: 'Success', description: 'Batch updated successfully.' });
+      } else {
+        // Add new batch
+        if (batches.find(s => s.name.toLowerCase() === batchName.trim().toLowerCase())) {
+          toast({ title: 'Error', description: 'Batch already exists.', variant: 'destructive' });
+          return;
+        }
+        await addDoc(collection(db, 'batches'), { name: batchName.trim() });
+        toast({ title: 'Success', description: 'Batch added successfully.' });
       }
-      setBatches([...batches, batchName.trim()]);
-      toast({ title: 'Success', description: 'Batch added successfully.' });
+      fetchBatches();
+    } catch (error) {
+      toast({ title: 'Error', description: 'An error occurred.', variant: 'destructive' });
+      console.error(error);
     }
 
     handleCloseDialog();
   };
   
-  const handleDelete = (batchToDelete: string) => {
-    setBatches(batches.filter(s => s !== batchToDelete));
-    toast({ title: 'Success', description: `Batch "${batchToDelete}" deleted.` });
+  const handleDelete = async (batchId: string) => {
+    try {
+      await deleteDoc(doc(db, 'batches', batchId));
+      toast({ title: 'Success', description: `Batch deleted.` });
+      fetchBatches();
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to delete batch.', variant: 'destructive' });
+    }
   }
 
   return (
@@ -88,21 +120,25 @@ export default function AdminBatchesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {batches.sort().map((batch) => (
-                <TableRow key={batch}>
-                  <TableCell className="font-medium">{batch}</TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(batch)}>
-                      <Pencil className="h-4 w-4" />
-                      <span className="sr-only">Edit</span>
-                    </Button>
-                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(batch)}>
-                      <Trash2 className="h-4 w-4" />
-                      <span className="sr-only">Delete</span>
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {isLoading ? (
+                <TableRow><TableCell colSpan={2}>Loading...</TableCell></TableRow>
+              ) : (
+                batches.map((batch) => (
+                  <TableRow key={batch.id}>
+                    <TableCell className="font-medium">{batch.name}</TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(batch)}>
+                        <Pencil className="h-4 w-4" />
+                        <span className="sr-only">Edit</span>
+                      </Button>
+                      <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(batch.id)}>
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Delete</span>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>

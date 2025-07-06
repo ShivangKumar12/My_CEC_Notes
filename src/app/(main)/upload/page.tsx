@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm } from 'react-hook-form';
@@ -5,22 +6,27 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Upload } from 'lucide-react';
-import { mockCourses, mockBatches, mockSubjects, mockSemesters } from '@/lib/mock-data';
+import { Upload, Loader2 } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { useState, useEffect } from 'react';
+import { useApp } from '@/hooks/use-app';
+import { db, storage } from '@/lib/firebase';
+import { collection, addDoc, getDocs, serverTimestamp } from 'firebase/firestore';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { v4 as uuidv4 } from 'uuid';
 
 const uploadSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters long.'),
   category: z.enum(['note', 'questionPaper'], { required_error: 'Please select a category.' }),
   paperType: z.enum(['PTU', 'MST1', 'MST2']).optional(),
-  subject: z.string().min(3, 'Subject is required.'),
-  semester: z.coerce.number().min(1).max(10),
-  course: z.string().min(3, 'Course is required.'),
-  batch: z.string().min(3, 'Batch is required.'),
+  subject: z.string({ required_error: 'Subject is required.' }).min(1, 'Subject is required.'),
+  semester: z.coerce.number({ required_error: 'Semester is required.' }).min(1).max(10),
+  course: z.string({ required_error: 'Course is required.' }).min(1, 'Course is required.'),
+  batch: z.string({ required_error: 'Batch is required.' }).min(1, 'Batch is required.'),
   file: z.any().refine((files) => files?.length === 1, 'File is required.'),
 }).refine(data => {
     if (data.category === 'questionPaper' && !data.paperType) {
@@ -33,27 +39,102 @@ const uploadSchema = z.object({
 });
 
 export default function UploadPage() {
+  const { user } = useApp();
   const { toast } = useToast();
+  const [isUploading, setIsUploading] = useState(false);
+  const [subjects, setSubjects] = useState<string[]>([]);
+  const [semesters, setSemesters] = useState<number[]>([]);
+  const [courses, setCourses] = useState<string[]>([]);
+  const [batches, setBatches] = useState<string[]>([]);
+
   const form = useForm<z.infer<typeof uploadSchema>>({
     resolver: zodResolver(uploadSchema),
     defaultValues: {
       title: '',
       category: 'note',
-      subject: '',
-      course: '',
-      batch: '',
     },
   });
   
+  useEffect(() => {
+    const fetchMetadata = async () => {
+      const [subjectsSnap, semestersSnap, coursesSnap, batchesSnap] = await Promise.all([
+        getDocs(collection(db, 'subjects')),
+        getDocs(collection(db, 'semesters')),
+        getDocs(collection(db, 'courses')),
+        getDocs(collection(db, 'batches')),
+      ]);
+      setSubjects(subjectsSnap.docs.map(d => d.data().name).sort());
+      setSemesters(semestersSnap.docs.map(d => d.data().value).sort((a:number, b:number) => a - b));
+      setCourses(coursesSnap.docs.map(d => d.data().name).sort());
+      setBatches(batchesSnap.docs.map(d => d.data().name).sort());
+    };
+    
+    fetchMetadata();
+  }, []);
+  
   const category = form.watch('category');
 
-  function onSubmit(values: z.infer<typeof uploadSchema>) {
-    console.log(values);
-    toast({
-      title: "Upload Successful!",
-      description: `Your ${values.category === 'note' ? 'note' : 'paper'} "${values.title}" has been submitted.`,
-    });
-    form.reset();
+  async function onSubmit(values: z.infer<typeof uploadSchema>) {
+    if (!user) {
+      toast({ title: 'Error', description: 'You must be logged in to upload.', variant: 'destructive' });
+      return;
+    }
+    setIsUploading(true);
+    try {
+      const file = values.file[0] as File;
+      const fileId = uuidv4();
+      const fileExtension = file.name.split('.').pop();
+      const storageRef = ref(storage, `notes/${fileId}.${fileExtension}`);
+      
+      const uploadTask = uploadBytesResumable(storageRef, file);
+
+      await uploadTask;
+      
+      const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+
+      const noteData = {
+        title: values.title,
+        category: values.category,
+        paperType: values.paperType || null,
+        subject: values.subject,
+        semester: values.semester,
+        course: values.course,
+        batch: values.batch,
+        fileUrl: downloadURL,
+        fileType: fileExtension === 'pdf' ? 'pdf' : 'doc',
+        thumbnailUrl: 'https://placehold.co/400x300.png',
+        uploader: {
+          id: user.uid,
+          name: user.displayName,
+          avatarUrl: user.photoURL,
+        },
+        likes: 0,
+        dislikes: 0,
+        averageRating: 0,
+        ratingsCount: 0,
+        downloads: 0,
+        feedback: [],
+        qna: [],
+        createdAt: serverTimestamp(),
+      };
+
+      await addDoc(collection(db, 'notes'), noteData);
+
+      toast({
+        title: "Upload Successful!",
+        description: `Your ${values.category === 'note' ? 'note' : 'paper'} "${values.title}" has been submitted.`,
+      });
+      form.reset();
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast({
+        title: 'Upload Failed',
+        description: 'Something went wrong. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUploading(false);
+    }
   }
 
   return (
@@ -85,6 +166,7 @@ export default function UploadPage() {
                         }}
                         defaultValue={field.value}
                         className="flex items-center space-x-4"
+                        disabled={isUploading}
                       >
                         <FormItem className="flex items-center space-x-2 space-y-0">
                           <FormControl>
@@ -112,7 +194,7 @@ export default function UploadPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Paper Type</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isUploading}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select a paper type" />
@@ -137,7 +219,7 @@ export default function UploadPage() {
                   <FormItem>
                     <FormLabel>Title</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., Summary of Quantum Physics Chapter 3" {...field} />
+                      <Input placeholder="e.g., Summary of Quantum Physics Chapter 3" {...field} disabled={isUploading} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -150,14 +232,14 @@ export default function UploadPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Subject</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isUploading}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select a subject" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {mockSubjects.map((subject) => (
+                          {subjects.map((subject) => (
                             <SelectItem key={subject} value={subject}>
                               {subject}
                             </SelectItem>
@@ -174,14 +256,14 @@ export default function UploadPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Semester</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={String(field.value)}>
+                      <Select onValueChange={field.onChange} defaultValue={String(field.value)} disabled={isUploading}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select a semester" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {mockSemesters.map((semester) => (
+                          {semesters.map((semester) => (
                             <SelectItem key={semester} value={String(semester)}>
                               Semester {semester}
                             </SelectItem>
@@ -198,14 +280,14 @@ export default function UploadPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Course</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isUploading}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select a course" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {mockCourses.map((course) => (
+                          {courses.map((course) => (
                             <SelectItem key={course} value={course}>
                               {course}
                             </SelectItem>
@@ -222,14 +304,14 @@ export default function UploadPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Batch</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isUploading}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select a batch" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {mockBatches.map((batch) => (
+                          {batches.map((batch) => (
                             <SelectItem key={batch} value={batch}>
                               {batch}
                             </SelectItem>
@@ -246,16 +328,17 @@ export default function UploadPage() {
                 name="file"
                 render={({ field: { onChange, value, ...rest } }) => (
                   <FormItem>
-                    <FormLabel>File (PDF or DOC)</FormLabel>
+                    <FormLabel>File (PDF or DOC/DOCX)</FormLabel>
                     <FormControl>
-                      <Input type="file" accept=".pdf,.doc,.docx" onChange={(e) => onChange(e.target.files)} {...rest} />
+                      <Input type="file" accept=".pdf,.doc,.docx" onChange={(e) => onChange(e.target.files)} {...rest} disabled={isUploading} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full text-lg font-bold py-6">
-                Upload Content
+              <Button type="submit" className="w-full text-lg font-bold py-6" disabled={isUploading}>
+                {isUploading ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : null}
+                {isUploading ? 'Uploading...' : 'Upload Content'}
               </Button>
             </form>
           </Form>

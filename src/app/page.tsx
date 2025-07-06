@@ -1,18 +1,62 @@
+
+"use client";
+
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { BookOpenCheck, ArrowRight, Library, GraduationCap } from 'lucide-react';
 import Footer from '@/components/footer';
 import Header from '@/components/header';
-import { mockNotes } from '@/lib/mock-data';
 import NoteCard from '@/components/note-card';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import { useState, useEffect } from 'react';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import type { Note } from '@/lib/types';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function HomePage() {
-  const featuredNotes = [...mockNotes].sort((a, b) => b.likes - a.likes).slice(0, 6);
-  const recentNotes = [...mockNotes].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()).slice(0, 4);
-  const subjects = [...new Set(mockNotes.map((note) => note.subject))].slice(0, 6);
-  const semesters = [...new Set(mockNotes.map((note) => note.semester))].sort((a, b) => a - b).slice(0, 6);
+  const [featuredNotes, setFeaturedNotes] = useState<Note[]>([]);
+  const [recentNotes, setRecentNotes] = useState<Note[]>([]);
+  const [subjects, setSubjects] = useState<string[]>([]);
+  const [semesters, setSemesters] = useState<number[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        // Fetch notes
+        const notesRef = collection(db, 'notes');
+        const featuredQuery = query(notesRef, orderBy('likes', 'desc'), limit(6));
+        const recentQuery = query(notesRef, orderBy('createdAt', 'desc'), limit(4));
+        
+        const [featuredSnap, recentSnap] = await Promise.all([
+          getDocs(featuredQuery),
+          getDocs(recentQuery),
+        ]);
+
+        const processSnap = (snap: any) => snap.docs.map((doc: any) => ({ id: doc.id, ...doc.data(), createdAt: doc.data().createdAt.toDate() } as Note));
+        
+        setFeaturedNotes(processSnap(featuredSnap));
+        setRecentNotes(processSnap(recentSnap));
+
+        // Fetch metadata
+        const subjectsSnap = await getDocs(query(collection(db, 'subjects'), limit(6)));
+        const semestersSnap = await getDocs(query(collection(db, 'semesters'), orderBy('value'), limit(6)));
+        
+        setSubjects(subjectsSnap.docs.map(d => d.data().name));
+        setSemesters(semestersSnap.docs.map(d => d.data().value));
+
+      } catch (error) {
+        console.error("Error fetching homepage data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -46,6 +90,13 @@ export default function HomePage() {
         <section className="py-16 md:py-24 bg-card">
           <div className="container mx-auto px-4">
             <h2 className="text-3xl font-headline font-bold text-center mb-12">Featured Notes</h2>
+            {isLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <Skeleton className="h-80 w-full" />
+                <Skeleton className="h-80 w-full" />
+                <Skeleton className="h-80 w-full" />
+              </div>
+            ) : (
             <Carousel
               opts={{
                 align: "start",
@@ -65,6 +116,7 @@ export default function HomePage() {
               <CarouselPrevious className="hidden lg:flex" />
               <CarouselNext className="hidden lg:flex" />
             </Carousel>
+            )}
           </div>
         </section>
 
@@ -118,11 +170,20 @@ export default function HomePage() {
         <section className="py-16 md:py-24 bg-background">
           <div className="container mx-auto px-4">
             <h2 className="text-3xl font-headline font-bold text-center mb-12">Recently Added Notes</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {recentNotes.map((note) => (
-                <NoteCard key={note.id} note={note} />
-              ))}
-            </div>
+             {isLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <Skeleton className="h-80 w-full" />
+                <Skeleton className="h-80 w-full" />
+                <Skeleton className="h-80 w-full" />
+                <Skeleton className="h-80 w-full" />
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {recentNotes.map((note) => (
+                  <NoteCard key={note.id} note={note} />
+                ))}
+              </div>
+            )}
           </div>
         </section>
         

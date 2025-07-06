@@ -1,7 +1,7 @@
+
 "use client";
 
-import { useState } from 'react';
-import { mockSubjects } from '@/lib/mock-data';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -10,18 +10,38 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { PlusCircle, Pencil, Trash2 } from 'lucide-react';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+
+interface Subject {
+  id: string;
+  name: string;
+}
 
 export default function AdminSubjectsPage() {
   const { toast } = useToast();
-  const [subjects, setSubjects] = useState(mockSubjects);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [currentSubject, setCurrentSubject] = useState<string | null>(null);
+  const [currentSubject, setCurrentSubject] = useState<Subject | null>(null);
   const [subjectName, setSubjectName] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleOpenDialog = (subject?: string) => {
+  const fetchSubjects = async () => {
+    setIsLoading(true);
+    const querySnapshot = await getDocs(collection(db, "subjects"));
+    const subjectsData = querySnapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name as string }));
+    setSubjects(subjectsData.sort((a, b) => a.name.localeCompare(b.name)));
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    fetchSubjects();
+  }, []);
+
+  const handleOpenDialog = (subject?: Subject) => {
     if (subject) {
       setCurrentSubject(subject);
-      setSubjectName(subject);
+      setSubjectName(subject.name);
     } else {
       setCurrentSubject(null);
       setSubjectName('');
@@ -35,33 +55,45 @@ export default function AdminSubjectsPage() {
     setSubjectName('');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!subjectName.trim()) {
       toast({ title: 'Error', description: 'Subject name cannot be empty.', variant: 'destructive' });
       return;
     }
 
-    if (currentSubject) {
-      // Edit existing subject
-      setSubjects(subjects.map(s => s === currentSubject ? subjectName.trim() : s));
-      toast({ title: 'Success', description: 'Subject updated successfully.' });
-    } else {
-      // Add new subject
-      if (subjects.find(s => s.toLowerCase() === subjectName.trim().toLowerCase())) {
-        toast({ title: 'Error', description: 'Subject already exists.', variant: 'destructive' });
-        return;
+    try {
+      if (currentSubject) {
+        // Edit existing subject
+        const subjectDoc = doc(db, 'subjects', currentSubject.id);
+        await updateDoc(subjectDoc, { name: subjectName.trim() });
+        toast({ title: 'Success', description: 'Subject updated successfully.' });
+      } else {
+        // Add new subject
+        if (subjects.find(s => s.name.toLowerCase() === subjectName.trim().toLowerCase())) {
+          toast({ title: 'Error', description: 'Subject already exists.', variant: 'destructive' });
+          return;
+        }
+        await addDoc(collection(db, 'subjects'), { name: subjectName.trim() });
+        toast({ title: 'Success', description: 'Subject added successfully.' });
       }
-      setSubjects([...subjects, subjectName.trim()]);
-      toast({ title: 'Success', description: 'Subject added successfully.' });
+      fetchSubjects();
+    } catch (error) {
+      toast({ title: 'Error', description: 'An error occurred.', variant: 'destructive' });
+      console.error(error);
     }
-
+    
     handleCloseDialog();
   };
   
-  const handleDelete = (subjectToDelete: string) => {
-    setSubjects(subjects.filter(s => s !== subjectToDelete));
-    toast({ title: 'Success', description: `Subject "${subjectToDelete}" deleted.` });
+  const handleDelete = async (subjectId: string) => {
+    try {
+      await deleteDoc(doc(db, 'subjects', subjectId));
+      toast({ title: 'Success', description: `Subject deleted.` });
+      fetchSubjects();
+    } catch (error) {
+        toast({ title: 'Error', description: 'Failed to delete subject.', variant: 'destructive' });
+    }
   }
 
   return (
@@ -88,21 +120,25 @@ export default function AdminSubjectsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {subjects.sort().map((subject) => (
-                <TableRow key={subject}>
-                  <TableCell className="font-medium">{subject}</TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(subject)}>
-                      <Pencil className="h-4 w-4" />
-                      <span className="sr-only">Edit</span>
-                    </Button>
-                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(subject)}>
-                      <Trash2 className="h-4 w-4" />
-                      <span className="sr-only">Delete</span>
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {isLoading ? (
+                <TableRow><TableCell colSpan={2}>Loading...</TableCell></TableRow>
+              ) : (
+                subjects.map((subject) => (
+                  <TableRow key={subject.id}>
+                    <TableCell className="font-medium">{subject.name}</TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(subject)}>
+                        <Pencil className="h-4 w-4" />
+                        <span className="sr-only">Edit</span>
+                      </Button>
+                      <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(subject.id)}>
+                        <Trash2 className="h-4 w-4" />
+                        <span className="sr-only">Delete</span>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>
