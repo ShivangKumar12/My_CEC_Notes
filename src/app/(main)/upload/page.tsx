@@ -62,9 +62,9 @@ export default function UploadPage() {
         <CardHeader>
           <CardTitle className="font-headline text-3xl flex items-center gap-2">
             <Upload className="h-8 w-8 text-primary" />
-            Upload Content
+            Upload Notes & Question Papers
           </CardTitle>
-          <CardDescription>Share your knowledge with the community. Fill out the details below to upload your content.</CardDescription>
+          <CardDescription>Share your study notes or previous year question papers with the community.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
