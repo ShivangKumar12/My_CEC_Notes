@@ -1,9 +1,8 @@
 import type { Metadata } from 'next';
 import { AppProvider } from '@/providers/app-provider';
-import { Toaster } from '@/components/ui/toaster';
-import { TooltipProvider } from '@/components/ui/tooltip';
 import './globals.css';
 import { ThemeProvider } from '@/providers/theme-provider';
+import AppContent from '@/providers/app-content';
 
 export const metadata: Metadata = {
   title: 'MyCECNotes',
@@ -30,10 +29,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AppProvider>
-            <TooltipProvider>
+            <AppContent>
               {children}
-              <Toaster />
-            </TooltipProvider>
+            </AppContent>
           </AppProvider>
         </ThemeProvider>
       </body>
