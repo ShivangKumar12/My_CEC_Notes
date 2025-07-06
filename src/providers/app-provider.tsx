@@ -29,6 +29,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
+    // If firebase is not configured, do not run auth logic.
+    if (!auth) {
+      setIsLoading(false);
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setIsLoading(true);
       if (firebaseUser) {
@@ -64,6 +70,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async () => {
+    if (!auth) {
+      console.error("Firebase not initialized. Cannot log in.");
+      toast({ title: "Configuration Error", description: "Firebase is not configured. Please check your .env.local file.", variant: "destructive" });
+      return;
+    }
     try {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
@@ -75,6 +86,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
+    if (!auth) {
+      console.error("Firebase not initialized. Cannot log out.");
+      return;
+    }
     try {
       await signOut(auth);
       toast({ title: "Logged Out", description: "You have been successfully logged out." });
@@ -84,6 +99,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
   
   const adminLogin = async (email: string, password: string): Promise<boolean> => {
+    if (!auth) {
+      console.error("Firebase not initialized. Cannot log in.");
+      toast({ title: "Configuration Error", description: "Firebase is not configured. Please check your .env.local file.", variant: "destructive" });
+      return false;
+    }
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const adminUser = userCredential.user;

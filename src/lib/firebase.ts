@@ -12,10 +12,26 @@ const firebaseConfig: FirebaseOptions = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-const auth = getAuth(app);
-const db = getFirestore(app);
-const storage = getStorage(app);
+// Initialize Firebase services
+let app, auth, db, storage;
+
+// This check prevents the app from crashing both during the build process and on the client
+// if the environment variables are missing.
+if (firebaseConfig.apiKey && firebaseConfig.projectId) {
+  try {
+    app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+    auth = getAuth(app);
+    db = getFirestore(app);
+    storage = getStorage(app);
+  } catch (e) {
+    console.error("Firebase initialization error", e);
+  }
+} else {
+  // In a development environment, it's helpful to log a warning.
+  if (process.env.NODE_ENV === 'development') {
+    console.warn("Firebase configuration is missing or incomplete. Please provide your Firebase credentials in .env.local to enable Firebase features.");
+  }
+}
+
 
 export { app, auth, db, storage };
