@@ -31,7 +31,7 @@ function StarRating({ rating, totalStars = 5 }: { rating: number; totalStars?: n
 
 export default function NoteCard({ note }: { note: Note }) {
   const [likes, setLikes] = useState(note.likes);
-  const [dislikes, setDislikes] = = useState(note.dislikes);
+  const [dislikes, setDislikes] = useState(note.dislikes);
 
   const handleLike = () => {
     setLikes(likes + 1);
