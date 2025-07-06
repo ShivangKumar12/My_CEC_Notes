@@ -26,6 +26,37 @@ export const mockNotes: Note[] = [
       { id: 'fb-1-2', user: mockUsers[2], rating: 4, comment: 'A small correction on page 2, the formula should be x^2 not x^3. Otherwise, fantastic!', createdAt: new Date('2023-10-17T09:25:00Z') },
       { id: 'fb-1-3', user: mockUsers[3], rating: 5, comment: 'Saved my grade. You are a hero.', createdAt: new Date('2023-10-18T14:10:00Z') },
     ],
+    qna: [
+      {
+        id: 'q-1-1',
+        user: mockUsers[3],
+        question: 'Is the formula for the derivative of sin(x) included in this cheatsheet?',
+        createdAt: new Date('2023-10-18T15:00:00Z'),
+        answers: [
+          {
+            id: 'a-1-1-1',
+            user: mockUsers[0],
+            text: 'Yes, it is on page 3 under the "Trigonometric Derivatives" section. The derivative of sin(x) is cos(x).',
+            upvotes: 15,
+            createdAt: new Date('2023-10-18T15:30:00Z'),
+          },
+          {
+            id: 'a-1-1-2',
+            user: mockUsers[2],
+            text: 'Found it! Thanks, that was helpful.',
+            upvotes: 3,
+            createdAt: new Date('2023-10-18T16:00:00Z'),
+          }
+        ]
+      },
+      {
+        id: 'q-1-2',
+        user: mockUsers[1],
+        question: "Can anyone explain L'Hôpital's Rule in simpler terms?",
+        createdAt: new Date('2023-10-19T10:00:00Z'),
+        answers: []
+      }
+    ],
     createdAt: new Date('2023-10-15T10:00:00Z'),
   },
   {
@@ -44,6 +75,7 @@ export const mockNotes: Note[] = [
     feedback: [
         { id: 'fb-2-1', user: mockUsers[0], rating: 5, comment: 'Really clear explanations of complex topics.', createdAt: new Date('2023-11-02T10:00:00Z') },
     ],
+    qna: [],
     createdAt: new Date('2023-11-01T14:30:00Z'),
   },
   {
@@ -63,6 +95,7 @@ export const mockNotes: Note[] = [
       { id: 'fb-3-1', user: mockUsers[3], rating: 5, comment: 'The Big O notation table is perfect.', createdAt: new Date('2023-09-21T18:45:00Z') },
       { id: 'fb-3-2', user: mockUsers[0], rating: 5, comment: 'I finally understand recursion. Thank you!', createdAt: new Date('2023-09-22T12:00:00Z') },
     ],
+    qna: [],
     createdAt: new Date('2023-09-20T09:00:00Z'),
   },
   {
@@ -79,6 +112,7 @@ export const mockNotes: Note[] = [
     ratingsCount: 18,
     downloads: 210,
     feedback: [],
+    qna: [],
     createdAt: new Date('2023-10-05T18:00:00Z'),
   },
   {
@@ -95,6 +129,7 @@ export const mockNotes: Note[] = [
     ratingsCount: 15,
     downloads: 150,
     feedback: [],
+    qna: [],
     createdAt: new Date('2024-01-10T11:00:00Z'),
   },
   {
@@ -111,6 +146,7 @@ export const mockNotes: Note[] = [
     ratingsCount: 40,
     downloads: 600,
     feedback: [],
+    qna: [],
     createdAt: new Date('2024-02-01T16:20:00Z'),
   },
   {
@@ -127,6 +163,7 @@ export const mockNotes: Note[] = [
     ratingsCount: 22,
     downloads: 280,
     feedback: [],
+    qna: [],
     createdAt: new Date('2024-03-12T13:00:00Z'),
   },
   {
@@ -146,6 +183,7 @@ export const mockNotes: Note[] = [
       { id: 'fb-8-1', user: mockUsers[0], rating: 5, comment: 'This is the best intro to ML I have ever seen.', createdAt: new Date('2024-04-06T10:00:00Z') },
       { id: 'fb-8-2', user: mockUsers[1], rating: 4, comment: 'Could use a bit more on regression models, but overall very solid.', createdAt: new Date('2024-04-06T15:30:00Z') },
     ],
+    qna: [],
     createdAt: new Date('2024-04-05T20:00:00Z'),
   },
 ];

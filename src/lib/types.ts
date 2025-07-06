@@ -12,6 +12,22 @@ export interface Feedback {
   createdAt: Date;
 }
 
+export interface Answer {
+  id: string;
+  user: User;
+  text: string;
+  upvotes: number;
+  createdAt: Date;
+}
+
+export interface Question {
+  id: string;
+  user: User;
+  question: string;
+  answers: Answer[];
+  createdAt: Date;
+}
+
 export interface Note {
   id: string;
   title: string;
@@ -26,5 +42,6 @@ export interface Note {
   ratingsCount: number;
   downloads: number;
   feedback: Feedback[];
+  qna: Question[];
   createdAt: Date;
 }

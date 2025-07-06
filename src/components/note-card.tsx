@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ThumbsUp, ThumbsDown, Star, Download, Eye, FileText, File, Flag } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, Star, Download, Eye, FileText, File, Flag, User as UserIcon } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
@@ -19,6 +19,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Separator } from './ui/separator';
 import { ScrollArea } from './ui/scroll-area';
 import { formatDistanceToNow } from 'date-fns';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 function StarRating({ rating, totalStars = 5, onRate, interactive = false }: { rating: number; totalStars?: number; onRate?: (rating: number) => void; interactive?: boolean; }) {
   const [hoverRating, setHoverRating] = useState(0);
@@ -54,6 +56,9 @@ export default function NoteCard({ note }: { note: Note }) {
   const [voted, setVoted] = useState<'like' | 'dislike' | null>(null);
   const [currentRating, setCurrentRating] = useState(0);
   const [newComment, setNewComment] = useState("");
+  const [newQuestion, setNewQuestion] = useState("");
+  const [upvotedAnswers, setUpvotedAnswers] = useState(new Set<string>());
+  const [newAnswers, setNewAnswers] = useState<{[key: string]: string}>({});
 
   const handleAuthAction = (action: () => void, message?: string) => {
     if (!user) {
@@ -138,6 +143,46 @@ export default function NoteCard({ note }: { note: Note }) {
     }, "You need to be logged in to comment.");
   }
 
+  const handleQuestionSubmit = () => {
+    handleAuthAction(() => {
+        if (newQuestion.trim() === "") return;
+        toast({
+            title: "Question Posted",
+            description: "Your question has been added.",
+        });
+        setNewQuestion("");
+        // In a real app, this would involve an API call and state update to show the new question
+    }, "You need to be logged in to ask a question.");
+  }
+  
+  const handleAnswerSubmit = (questionId: string) => {
+    handleAuthAction(() => {
+        const answerText = newAnswers[questionId];
+        if (!answerText || answerText.trim() === "") return;
+        toast({
+            title: "Answer Posted",
+            description: "Your answer has been submitted.",
+        });
+        setNewAnswers(prev => ({...prev, [questionId]: ''}));
+        // In a real app, this would involve an API call and state update
+    }, "You must be logged in to answer a question.");
+  }
+
+  const handleUpvote = (answerId: string) => {
+    handleAuthAction(() => {
+        setUpvotedAnswers(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(answerId)) {
+                newSet.delete(answerId);
+            } else {
+                newSet.add(answerId);
+            }
+            return newSet;
+        });
+    }, "You need to log in to upvote answers.");
+  }
+
+
   return (
     <Card className="flex flex-col h-full overflow-hidden transition-all duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1">
       <CardHeader>
@@ -215,40 +260,135 @@ export default function NoteCard({ note }: { note: Note }) {
                         <Image src="https://placehold.co/800x1100.png" alt="Note preview" layout="fill" objectFit="contain" data-ai-hint="document page" />
                       </div>
                       <div className="md:col-span-2 flex flex-col h-full">
-                        <h3 className="text-lg font-semibold mb-2 font-headline">Discussion</h3>
-                        <Separator className="mb-4" />
-                        <ScrollArea className="flex-grow pr-6 -mr-6">
-                            {note.feedback.length > 0 ? (
-                                note.feedback.map((fb) => (
-                                <div key={fb.id} className="flex items-start space-x-3 mb-4">
-                                    <Avatar className="h-8 w-8">
-                                        <AvatarImage src={fb.user.avatarUrl} alt={fb.user.name} />
-                                        <AvatarFallback>{fb.user.name.charAt(0)}</AvatarFallback>
-                                    </Avatar>
-                                    <div className="flex-1">
-                                        <div className="flex items-center justify-between">
-                                        <p className="text-sm font-medium">{fb.user.name}</p>
-                                        <p className="text-xs text-muted-foreground">{formatDistanceToNow(fb.createdAt, { addSuffix: true })}</p>
+                        <Tabs defaultValue="discussion" className="flex flex-col h-full">
+                            <TabsList className="mb-4 w-full grid grid-cols-2">
+                                <TabsTrigger value="discussion">Discussion</TabsTrigger>
+                                <TabsTrigger value="qna">Q&amp;A ({note.qna.length})</TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="discussion" className="flex-grow flex flex-col min-h-0">
+                                <ScrollArea className="flex-grow pr-6 -mr-6">
+                                    {note.feedback.length > 0 ? (
+                                        note.feedback.map((fb) => (
+                                        <div key={fb.id} className="flex items-start space-x-3 mb-4">
+                                            <Avatar className="h-8 w-8">
+                                                <AvatarImage src={fb.user.avatarUrl} alt={fb.user.name} />
+                                                <AvatarFallback>{fb.user.name.charAt(0)}</AvatarFallback>
+                                            </Avatar>
+                                            <div className="flex-1">
+                                                <div className="flex items-center justify-between">
+                                                <p className="text-sm font-medium">{fb.user.name}</p>
+                                                <p className="text-xs text-muted-foreground">{formatDistanceToNow(fb.createdAt, { addSuffix: true })}</p>
+                                                </div>
+                                                <p className="text-sm text-muted-foreground mt-1">{fb.comment}</p>
+                                            </div>
                                         </div>
-                                        <p className="text-sm text-muted-foreground mt-1">{fb.comment}</p>
-                                    </div>
+                                        ))
+                                    ) : (
+                                        <p className="text-sm text-muted-foreground text-center py-8">No comments yet. Be the first to start the discussion!</p>
+                                    )}
+                                </ScrollArea>
+                                <Separator className="my-4" />
+                                <div className="mt-auto">
+                                    <Textarea 
+                                        placeholder={user ? "Add your comment..." : "Log in to add a comment."}
+                                        className="mb-2"
+                                        value={newComment}
+                                        onChange={(e) => setNewComment(e.target.value)}
+                                        disabled={!user}
+                                    />
+                                    <Button onClick={handleCommentSubmit} disabled={!user || newComment.trim() === ""} className="w-full">Post Comment</Button>
                                 </div>
-                                ))
-                            ) : (
-                                <p className="text-sm text-muted-foreground text-center py-8">No comments yet. Be the first to start the discussion!</p>
-                            )}
-                        </ScrollArea>
-                        <Separator className="my-4" />
-                        <div className="mt-auto">
-                            <Textarea 
-                                placeholder={user ? "Add your comment..." : "Log in to add a comment."}
-                                className="mb-2"
-                                value={newComment}
-                                onChange={(e) => setNewComment(e.target.value)}
-                                disabled={!user}
-                            />
-                            <Button onClick={handleCommentSubmit} disabled={!user || newComment.trim() === ""} className="w-full">Post Comment</Button>
-                        </div>
+                            </TabsContent>
+                            <TabsContent value="qna" className="flex-grow flex flex-col min-h-0">
+                                <ScrollArea className="flex-grow pr-6 -mr-6">
+                                    {note.qna.length > 0 ? (
+                                    <Accordion type="single" collapsible className="w-full" defaultValue={note.qna[0]?.id}>
+                                        {note.qna.map((q) => (
+                                            <AccordionItem value={q.id} key={q.id}>
+                                                <AccordionTrigger>
+                                                    <div className="flex items-start space-x-3 text-left w-full">
+                                                        <Avatar className="h-8 w-8 flex-shrink-0">
+                                                            <AvatarImage src={q.user.avatarUrl} alt={q.user.name} />
+                                                            <AvatarFallback>{q.user.name.charAt(0)}</AvatarFallback>
+                                                        </Avatar>
+                                                        <div className="flex-1">
+                                                            <p className="text-sm font-medium">{q.user.name}</p>
+                                                            <p className="text-sm text-muted-foreground mt-1 font-normal">{q.question}</p>
+                                                        </div>
+                                                    </div>
+                                                </AccordionTrigger>
+                                                <AccordionContent>
+                                                    <div className="pl-11 space-y-4">
+                                                        {q.answers.length > 0 ? (
+                                                            q.answers.map(ans => (
+                                                                <div key={ans.id} className="flex items-start space-x-3">
+                                                                    <Avatar className="h-8 w-8 flex-shrink-0">
+                                                                        <AvatarImage src={ans.user.avatarUrl} alt={ans.user.name} />
+                                                                        <AvatarFallback>{ans.user.name.charAt(0)}</AvatarFallback>
+                                                                    </Avatar>
+                                                                    <div className="flex-1">
+                                                                        <div className="flex items-center justify-between">
+                                                                            <p className="text-sm font-medium">{ans.user.name}</p>
+                                                                            <div className="flex items-center gap-1">
+                                                                                <span className="text-xs text-muted-foreground">{ans.upvotes + (upvotedAnswers.has(ans.id) ? 1 : 0)}</span>
+                                                                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleUpvote(ans.id)}>
+                                                                                    <ThumbsUp className={cn('h-4 w-4', upvotedAnswers.has(ans.id) && 'text-primary fill-primary/20')} />
+                                                                                </Button>
+                                                                            </div>
+                                                                        </div>
+                                                                        <p className="text-sm text-muted-foreground mt-1">{ans.text}</p>
+                                                                    </div>
+                                                                </div>
+                                                            ))
+                                                        ) : (
+                                                            <p className="text-sm text-muted-foreground text-center py-4">No answers yet. Be the first to help!</p>
+                                                        )}
+                                                        <div className="flex items-start space-x-3 pt-4 border-t">
+                                                            <Avatar className="h-8 w-8 flex-shrink-0">
+                                                                {user ? (
+                                                                  <>
+                                                                    <AvatarImage src={user?.avatarUrl} />
+                                                                    <AvatarFallback>{user?.name.charAt(0)}</AvatarFallback>
+                                                                  </>
+                                                                ) : (
+                                                                  <AvatarFallback>
+                                                                    <UserIcon className="h-4 w-4" />
+                                                                  </AvatarFallback>
+                                                                )}
+                                                            </Avatar>
+                                                            <div className="flex-1">
+                                                                <Textarea 
+                                                                    placeholder={user ? "Write your answer..." : "Log in to answer."}
+                                                                    className="mb-2"
+                                                                    value={newAnswers[q.id] || ''}
+                                                                    onChange={(e) => setNewAnswers(prev => ({...prev, [q.id]: e.target.value}))}
+                                                                    disabled={!user}
+                                                                />
+                                                                <Button size="sm" onClick={() => handleAnswerSubmit(q.id)} disabled={!user || !(newAnswers[q.id] || '').trim()}>Post Answer</Button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </AccordionContent>
+                                            </AccordionItem>
+                                        ))}
+                                    </Accordion>
+                                    ) : (
+                                      <p className="text-sm text-muted-foreground text-center py-8">No questions have been asked yet. Be the first!</p>
+                                    )}
+                                </ScrollArea>
+                                <Separator className="my-4" />
+                                <div className="mt-auto">
+                                    <Textarea 
+                                        placeholder={user ? "Ask a new question about this note..." : "Log in to ask a question."}
+                                        className="mb-2"
+                                        value={newQuestion}
+                                        onChange={(e) => setNewQuestion(e.target.value)}
+                                        disabled={!user}
+                                    />
+                                    <Button onClick={handleQuestionSubmit} disabled={!user || newQuestion.trim() === ""} className="w-full">Ask Question</Button>
+                                </div>
+                            </TabsContent>
+                        </Tabs>
                       </div>
                     </div>
                 </DialogContent>
