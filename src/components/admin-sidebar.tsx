@@ -18,7 +18,7 @@ import { useApp } from "@/hooks/use-app"
 
 const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/notes", label: "Notes", icon: FileText },
+  { href: "/admin/notes", label: "Content", icon: FileText },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/subjects", label: "Subjects", icon: Library },
   { href: "/admin/semesters", label: "Semesters", icon: GraduationCap },
