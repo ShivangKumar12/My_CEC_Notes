@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LogOut, LayoutDashboard } from 'lucide-react';
+import { LogOut, LayoutDashboard, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 
 export default function UserAuthButton() {
@@ -25,6 +25,9 @@ export default function UserAuthButton() {
       </Button>
     );
   }
+
+  // Assume the first user is an admin for demonstration
+  const isAdmin = user.id === 'user-1';
 
   return (
     <DropdownMenu>
@@ -52,6 +55,14 @@ export default function UserAuthButton() {
             <span>Dashboard</span>
           </Link>
         </DropdownMenuItem>
+        {isAdmin && (
+           <DropdownMenuItem asChild>
+            <Link href="/admin/dashboard">
+              <ShieldCheck className="mr-2 h-4 w-4" />
+              <span>Admin Panel</span>
+            </Link>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={logout}>
           <LogOut className="mr-2 h-4 w-4" />
