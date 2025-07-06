@@ -36,6 +36,7 @@ export interface Note {
   uploader: User;
   fileUrl: string;
   fileType: 'pdf' | 'doc';
+  thumbnailUrl: string;
   likes: number;
   dislikes: number;
   averageRating: number;

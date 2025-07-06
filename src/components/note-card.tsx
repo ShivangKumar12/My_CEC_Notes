@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ThumbsUp, ThumbsDown, Star, Download, Eye, FileText, File, Flag, User as UserIcon } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, Star, Download, Eye, Flag, User as UserIcon } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
@@ -182,9 +182,22 @@ export default function NoteCard({ note }: { note: Note }) {
     }, "You need to log in to upvote answers.");
   }
 
+  const getAiHint = (subject: string) => {
+    return subject.toLowerCase().split(' ').slice(0, 2).join(' ');
+  }
 
   return (
-    <Card className="flex flex-col h-full overflow-hidden transition-all duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1">
+    <Card className="flex flex-col h-full overflow-hidden transition-all duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1 group">
+      <div className="relative w-full aspect-video">
+        <Image
+          src={note.thumbnailUrl}
+          alt={`Preview of ${note.title}`}
+          layout="fill"
+          objectFit="cover"
+          className="transition-transform duration-300 group-hover:scale-105"
+          data-ai-hint={getAiHint(note.subject)}
+        />
+      </div>
       <CardHeader>
         <div className="flex justify-between items-start gap-4">
           <CardTitle className="font-headline text-xl leading-tight">{note.title}</CardTitle>
@@ -197,7 +210,6 @@ export default function NoteCard({ note }: { note: Note }) {
               </TooltipTrigger>
               <TooltipContent><p>Report note</p></TooltipContent>
             </Tooltip>
-            {note.fileType === 'pdf' ? <File className="h-6 w-6 text-red-500" /> : <FileText className="h-6 w-6 text-blue-500" />}
           </div>
         </div>
         <CardDescription>
