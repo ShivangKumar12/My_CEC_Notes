@@ -21,7 +21,11 @@ export const mockNotes: Note[] = [
     averageRating: 4.8,
     ratingsCount: 30,
     downloads: 450,
-    feedback: [],
+    feedback: [
+      { id: 'fb-1-1', user: mockUsers[1], rating: 5, comment: 'This is incredibly helpful, thanks for sharing!', createdAt: new Date('2023-10-16T11:00:00Z') },
+      { id: 'fb-1-2', user: mockUsers[2], rating: 4, comment: 'A small correction on page 2, the formula should be x^2 not x^3. Otherwise, fantastic!', createdAt: new Date('2023-10-17T09:25:00Z') },
+      { id: 'fb-1-3', user: mockUsers[3], rating: 5, comment: 'Saved my grade. You are a hero.', createdAt: new Date('2023-10-18T14:10:00Z') },
+    ],
     createdAt: new Date('2023-10-15T10:00:00Z'),
   },
   {
@@ -37,7 +41,9 @@ export const mockNotes: Note[] = [
     averageRating: 4.5,
     ratingsCount: 25,
     downloads: 320,
-    feedback: [],
+    feedback: [
+        { id: 'fb-2-1', user: mockUsers[0], rating: 5, comment: 'Really clear explanations of complex topics.', createdAt: new Date('2023-11-02T10:00:00Z') },
+    ],
     createdAt: new Date('2023-11-01T14:30:00Z'),
   },
   {
@@ -53,7 +59,10 @@ export const mockNotes: Note[] = [
     averageRating: 4.9,
     ratingsCount: 55,
     downloads: 890,
-    feedback: [],
+    feedback: [
+      { id: 'fb-3-1', user: mockUsers[3], rating: 5, comment: 'The Big O notation table is perfect.', createdAt: new Date('2023-09-21T18:45:00Z') },
+      { id: 'fb-3-2', user: mockUsers[0], rating: 5, comment: 'I finally understand recursion. Thank you!', createdAt: new Date('2023-09-22T12:00:00Z') },
+    ],
     createdAt: new Date('2023-09-20T09:00:00Z'),
   },
   {
@@ -133,7 +142,10 @@ export const mockNotes: Note[] = [
     averageRating: 4.9,
     ratingsCount: 70,
     downloads: 1200,
-    feedback: [],
+    feedback: [
+      { id: 'fb-8-1', user: mockUsers[0], rating: 5, comment: 'This is the best intro to ML I have ever seen.', createdAt: new Date('2024-04-06T10:00:00Z') },
+      { id: 'fb-8-2', user: mockUsers[1], rating: 4, comment: 'Could use a bit more on regression models, but overall very solid.', createdAt: new Date('2024-04-06T15:30:00Z') },
+    ],
     createdAt: new Date('2024-04-05T20:00:00Z'),
   },
 ];

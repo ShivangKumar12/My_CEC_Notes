@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { BookOpenCheck, Home, Upload, User as UserIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import UserAuthButton from './user-auth-button';
+import { ThemeToggle } from './theme-toggle';
 
 const navLinks = [
   { href: '/notes', label: 'Notes', icon: Home },
@@ -38,7 +39,8 @@ export default function Header() {
             </Link>
           ))}
         </nav>
-        <div className="flex flex-1 items-center justify-end space-x-4">
+        <div className="flex flex-1 items-center justify-end space-x-2">
+          <ThemeToggle />
           <UserAuthButton />
         </div>
       </div>
