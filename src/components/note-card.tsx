@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { Note } from '@/lib/types';
@@ -12,6 +13,9 @@ import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Textarea } from './ui/textarea';
+import { useApp } from '@/hooks/use-app';
+import { useToast } from '@/hooks/use-toast';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 function StarRating({ rating, totalStars = 5 }: { rating: number; totalStars?: number }) {
   return (
@@ -30,16 +34,65 @@ function StarRating({ rating, totalStars = 5 }: { rating: number; totalStars?: n
 }
 
 export default function NoteCard({ note }: { note: Note }) {
+  const { user } = useApp();
+  const { toast } = useToast();
   const [likes, setLikes] = useState(note.likes);
   const [dislikes, setDislikes] = useState(note.dislikes);
+  const [voted, setVoted] = useState<'like' | 'dislike' | null>(null);
+
+  const handleAuthAction = (action: () => void, message?: string) => {
+    if (!user) {
+      toast({
+        title: "Login Required",
+        description: message || "You need to be logged in to perform this action.",
+        variant: "destructive",
+      });
+      return;
+    }
+    action();
+  };
 
   const handleLike = () => {
-    setLikes(likes + 1);
+    if (voted === 'like') {
+      setVoted(null);
+      setLikes(l => l - 1);
+    } else {
+      if (voted === 'dislike') {
+        setDislikes(d => d - 1);
+      }
+      setVoted('like');
+      setLikes(l => l + 1);
+    }
   };
 
   const handleDislike = () => {
-    setDislikes(dislikes + 1);
+    if (voted === 'dislike') {
+      setVoted(null);
+      setDislikes(d => d - 1);
+    } else {
+      if (voted === 'like') {
+        setLikes(l => l - 1);
+      }
+      setVoted('dislike');
+      setDislikes(d => d + 1);
+    }
   };
+
+  const handleDownload = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!user) {
+      e.preventDefault();
+      handleAuthAction(() => {}, "Please log in to download notes.");
+    }
+  };
+  
+  const handleFeedbackSubmit = () => {
+    handleAuthAction(() => {
+        toast({
+            title: "Feedback Submitted",
+            description: "Thank you for rating this note!",
+        });
+    }, "Please log in to rate notes.");
+  }
 
   return (
     <Card className="flex flex-col h-full overflow-hidden transition-all duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1">
@@ -74,11 +127,21 @@ export default function NoteCard({ note }: { note: Note }) {
       </CardContent>
       <CardFooter className="grid grid-cols-2 gap-2">
         <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleLike} className="flex-1 group transition-colors duration-200">
-                <ThumbsUp className="h-4 w-4 mr-1 group-hover:text-primary transition-colors" /> {likes}
+            <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => handleAuthAction(handleLike, "Please log in to like notes.")} 
+                className="flex-1 group transition-colors duration-200"
+            >
+                <ThumbsUp className={cn("h-4 w-4 mr-1 group-hover:text-primary transition-colors", voted === 'like' && "text-primary fill-[hsl(var(--primary))]")} /> {likes}
             </Button>
-            <Button variant="outline" size="sm" onClick={handleDislike} className="flex-1 group transition-colors duration-200">
-                <ThumbsDown className="h-4 w-4 mr-1 group-hover:text-destructive transition-colors" /> {dislikes}
+            <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => handleAuthAction(handleDislike, "Please log in to dislike notes.")} 
+                className="flex-1 group transition-colors duration-200"
+            >
+                <ThumbsDown className={cn("h-4 w-4 mr-1 group-hover:text-destructive transition-colors", voted === 'dislike' && "text-destructive fill-[hsl(var(--destructive))]")} /> {dislikes}
             </Button>
         </div>
         <div className="flex items-center gap-2">
@@ -100,29 +163,40 @@ export default function NoteCard({ note }: { note: Note }) {
             </Dialog>
             
             <Popover>
-                <PopoverTrigger asChild>
-                    <Button size="sm" className="flex-1"><Star className="h-4 w-4 mr-1" /> Rate</Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-80">
-                  <div className="grid gap-4">
-                    <div className="space-y-2">
-                      <h4 className="font-medium leading-none">Rate this note</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Share your feedback with the community.
-                      </p>
-                    </div>
-                    <div className="flex justify-center">
-                      <StarRating rating={0} />
-                    </div>
-                    <Textarea placeholder="Optional: Add a comment..." />
-                    <Button>Submit Feedback</Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <PopoverTrigger asChild>
+                    <Button size="sm" className="flex-1" disabled={!user}>
+                      <Star className="h-4 w-4 mr-1" /> Rate
+                    </Button>
+                  </PopoverTrigger>
+                </TooltipTrigger>
+                {!user && (
+                  <TooltipContent>
+                    <p>Log in to rate notes</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+              <PopoverContent className="w-80">
+                <div className="grid gap-4">
+                  <div className="space-y-2">
+                    <h4 className="font-medium leading-none">Rate this note</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Share your feedback with the community.
+                    </p>
                   </div>
-                </PopoverContent>
+                  <div className="flex justify-center">
+                    <StarRating rating={0} />
+                  </div>
+                  <Textarea placeholder="Optional: Add a comment..." />
+                  <Button onClick={handleFeedbackSubmit}>Submit Feedback</Button>
+                </div>
+              </PopoverContent>
             </Popover>
         </div>
       </CardFooter>
       <div className="p-1 text-center">
-        <a href={note.fileUrl} download>
+        <a href={note.fileUrl} download onClick={handleDownload}>
             <Button variant="default" className="w-full mt-2 transition-transform transform hover:scale-105">
                 <Download className="h-4 w-4 mr-2" /> Download
             </Button>
