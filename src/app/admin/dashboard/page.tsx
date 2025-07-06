@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from 'react';
 import { mockNotes, mockUsers } from '@/lib/mock-data';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -22,6 +23,12 @@ const chartConfig = {
 } satisfies ChartConfig
 
 export default function AdminDashboardPage() {
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   const totalNotes = mockNotes.length;
   const totalUsers = mockUsers.length;
   const totalDownloads = mockNotes.reduce((sum, note) => sum + note.downloads, 0);
@@ -120,7 +127,7 @@ export default function AdminDashboardPage() {
                   <TableRow key={note.id}>
                     <TableCell className="font-medium truncate max-w-40">{note.title}</TableCell>
                     <TableCell><Badge variant="outline">{note.subject}</Badge></TableCell>
-                    <TableCell className="text-right">{format(note.createdAt, 'PP')}</TableCell>
+                    <TableCell className="text-right">{isClient ? format(note.createdAt, 'PP') : null}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
