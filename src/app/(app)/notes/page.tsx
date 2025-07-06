@@ -19,8 +19,8 @@ import type { Note } from '@/lib/types';
 
 export default function NotesPage() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedSubject, setSelectedSubject] = useState('');
-  const [selectedSemester, setSelectedSemester] = useState('');
+  const [selectedSubject, setSelectedSubject] = useState('all');
+  const [selectedSemester, setSelectedSemester] = useState('all');
   const [sortBy, setSortBy] = useState('rating'); // Default sort by rating
 
   const subjects = [...new Set(mockNotes.map((note) => note.subject))];
@@ -34,8 +34,8 @@ export default function NotesPage() {
         ? note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
           note.subject.toLowerCase().includes(searchQuery.toLowerCase())
         : true;
-      const subjectMatch = selectedSubject ? note.subject === selectedSubject : true;
-      const semesterMatch = selectedSemester
+      const subjectMatch = selectedSubject !== 'all' ? note.subject === selectedSubject : true;
+      const semesterMatch = selectedSemester !== 'all'
         ? String(note.semester) === selectedSemester
         : true;
       return searchMatch && subjectMatch && semesterMatch;
@@ -63,12 +63,12 @@ export default function NotesPage() {
 
   const resetFilters = () => {
     setSearchQuery('');
-    setSelectedSubject('');
-    setSelectedSemester('');
+    setSelectedSubject('all');
+    setSelectedSemester('all');
     setSortBy('rating');
   }
 
-  const isFiltered = searchQuery || selectedSubject || selectedSemester;
+  const isFiltered = searchQuery || selectedSubject !== 'all' || selectedSemester !== 'all';
 
   const NoteGrid = ({ notes }: { notes: Note[] }) => {
     if (notes.length === 0) {
@@ -109,7 +109,7 @@ export default function NotesPage() {
               <SelectValue placeholder="Filter by Subject" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Subjects</SelectItem>
+              <SelectItem value="all">All Subjects</SelectItem>
               {subjects.map(subject => <SelectItem key={subject} value={subject}>{subject}</SelectItem>)}
             </SelectContent>
           </Select>
@@ -118,7 +118,7 @@ export default function NotesPage() {
               <SelectValue placeholder="Filter by Semester" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Semesters</SelectItem>
+              <SelectItem value="all">All Semesters</SelectItem>
               {semesters.map(semester => <SelectItem key={semester} value={String(semester)}>Semester {semester}</SelectItem>)}
             </SelectContent>
           </Select>
