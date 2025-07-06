@@ -1,18 +1,7 @@
-import Header from '@/components/header';
-import Footer from '@/components/footer';
+// This layout has been deactivated to resolve a routing conflict.
+import React from 'react';
 
-export default function AppLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex min-h-screen flex-col bg-background">
-      <Header />
-      <main className="flex-1">
-        {children}
-      </main>
-      <Footer />
-    </div>
-  );
+// This component is intentionally not exported as default to avoid being an active layout.
+function DeactivatedLayout({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
 }
