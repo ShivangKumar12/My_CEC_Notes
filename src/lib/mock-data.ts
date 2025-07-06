@@ -62,8 +62,8 @@ export const mockNotes: Note[] = [
   },
   {
     id: 'note-2',
-    title: 'Quantum Mechanics Fundamentals',
-    subject: 'Physics',
+    title: 'Digital Logic Design Fundamentals',
+    subject: 'Digital Logic',
     semester: 5,
     uploader: mockUsers[1],
     fileUrl: '#',
@@ -83,7 +83,7 @@ export const mockNotes: Note[] = [
   {
     id: 'note-3',
     title: 'Data Structures & Algorithms Summary',
-    subject: 'Computer Science',
+    subject: 'Data Structures',
     semester: 3,
     uploader: mockUsers[2],
     fileUrl: '#',
@@ -103,8 +103,8 @@ export const mockNotes: Note[] = [
   },
   {
     id: 'note-4',
-    title: 'Organic Chemistry Reaction Mechanisms',
-    subject: 'Chemistry',
+    title: 'Operating Systems Concepts',
+    subject: 'Operating Systems',
     semester: 2,
     uploader: mockUsers[3],
     fileUrl: '#',
@@ -121,8 +121,8 @@ export const mockNotes: Note[] = [
   },
   {
     id: 'note-5',
-    title: 'World History: The Modern Era',
-    subject: 'History',
+    title: 'Intro to Computer Networks',
+    subject: 'Computer Networks',
     semester: 1,
     uploader: mockUsers[0],
     fileUrl: '#',
@@ -139,8 +139,8 @@ export const mockNotes: Note[] = [
   },
   {
     id: 'note-6',
-    title: 'Introduction to Microeconomics',
-    subject: 'Economics',
+    title: 'Database Systems Basics',
+    subject: 'Database Systems',
     semester: 1,
     uploader: mockUsers[1],
     fileUrl: '#',
@@ -157,8 +157,8 @@ export const mockNotes: Note[] = [
   },
   {
     id: 'note-7',
-    title: 'Literary Analysis Guide',
-    subject: 'Literature',
+    title: 'Software Engineering Principles',
+    subject: 'Software Engineering',
     semester: 4,
     uploader: mockUsers[2],
     fileUrl: '#',
@@ -176,7 +176,7 @@ export const mockNotes: Note[] = [
   {
     id: 'note-8',
     title: 'Machine Learning Basics',
-    subject: 'Computer Science',
+    subject: 'Machine Learning',
     semester: 6,
     uploader: mockUsers[3],
     fileUrl: '#',

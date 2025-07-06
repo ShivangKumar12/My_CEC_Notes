@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { BookOpenCheck, Github, Linkedin, Instagram } from 'lucide-react';
 
-const subjects = ['Mathematics', 'Physics', 'Computer Science', 'Chemistry', 'History', 'Economics'];
+const subjects = ['Data Structures', 'Operating Systems', 'Computer Networks', 'Database Systems', 'Machine Learning', 'Mathematics'];
 const socialLinks = [
   { icon: Instagram, href: '#', name: 'Instagram' },
   { icon: Github, href: '#', name: 'GitHub' },
