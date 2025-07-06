@@ -22,7 +22,7 @@ export default function Header() {
         <div className="mr-4 flex items-center">
           <Link href="/" className="flex items-center gap-2 font-bold font-headline text-lg">
             <BookOpenCheck className="h-6 w-6 text-primary" />
-            <span>NoteVault</span>
+            <span>MyCECNotes</span>
           </Link>
         </div>
         <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">

@@ -16,7 +16,7 @@ export default function Footer() {
           <div className="col-span-1 lg:col-span-2">
             <Link href="/" className="flex items-center gap-2 font-bold font-headline text-xl mb-2">
               <BookOpenCheck className="h-7 w-7 text-primary" />
-              <span>NoteVault</span>
+              <span>MyCECNotes</span>
             </Link>
             <p className="text-muted-foreground text-sm max-w-xs">
               Your centralized hub for sharing and discovering student-authored notes.
@@ -60,7 +60,7 @@ export default function Footer() {
 
         <div className="mt-12 pt-8 border-t flex flex-col sm:flex-row justify-between items-center text-sm text-muted-foreground">
           <div className="text-center sm:text-left">
-            <p>&copy; {new Date().getFullYear()} NoteVault. All Rights Reserved.</p>
+            <p>&copy; {new Date().getFullYear()} MyCECNotes. All Rights Reserved.</p>
             <p>Designed & Developed by Shivang.</p>
           </div>
           <div className="flex space-x-6 mt-4 sm:mt-0">

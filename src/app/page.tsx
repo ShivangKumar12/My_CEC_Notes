@@ -26,7 +26,7 @@ export default function HomePage() {
               <BookOpenCheck className="w-12 h-12 text-primary" />
             </div>
             <h1 className="text-5xl md:text-7xl font-headline font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-primary via-blue-400 to-accent">
-              Welcome to NoteVault
+              Welcome to MyCECNotes
             </h1>
             <p className="max-w-2xl mx-auto mt-4 text-lg text-muted-foreground">
               Your centralized hub for sharing and discovering student-authored notes. Upload your study materials, rate contributions, and collaborate for academic success.

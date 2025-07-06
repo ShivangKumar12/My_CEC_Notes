@@ -6,7 +6,7 @@ import './globals.css';
 import { ThemeProvider } from '@/providers/theme-provider';
 
 export const metadata: Metadata = {
-  title: 'NoteVault',
+  title: 'MyCECNotes',
   description: 'A Student Notes Sharing Platform',
 };
 
