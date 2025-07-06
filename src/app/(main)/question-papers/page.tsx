@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -17,25 +16,22 @@ import { Search, ListX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { Note } from '@/lib/types';
 
-export default function NotesPage() {
+export default function QuestionPapersPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('all');
   const [selectedSemester, setSelectedSemester] = useState('all');
   const [selectedCourse, setSelectedCourse] = useState('all');
   const [selectedBatch, setSelectedBatch] = useState('all');
-  const [sortBy, setSortBy] = useState('rating'); // Default sort by rating
 
-  const notesOnly = useMemo(() => mockNotes.filter(n => n.category === 'note'), []);
+  const questionPapers = useMemo(() => mockNotes.filter(note => note.category === 'questionPaper'), []);
 
-  const subjects = [...new Set(notesOnly.map((note) => note.subject))];
-  const semesters = [...new Set(notesOnly.map((note) => note.semester))].sort(
-    (a, b) => a - b
-  );
-  const courses = [...new Set(notesOnly.map((note) => note.course))];
-  const batches = [...new Set(notesOnly.map((note) => note.batch))].sort();
+  const subjects = [...new Set(questionPapers.map((note) => note.subject))];
+  const semesters = [...new Set(questionPapers.map((note) => note.semester))].sort((a, b) => a - b);
+  const courses = [...new Set(questionPapers.map((note) => note.course))];
+  const batches = [...new Set(questionPapers.map((note) => note.batch))].sort();
 
-  const filteredNotes = useMemo(() => {
-    return notesOnly.filter((note) => {
+  const filteredPapers = useMemo(() => {
+    return questionPapers.filter((note) => {
       const searchMatch = searchQuery
         ? note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
           note.subject.toLowerCase().includes(searchQuery.toLowerCase())
@@ -48,26 +44,11 @@ export default function NotesPage() {
       const batchMatch = selectedBatch !== 'all' ? note.batch === selectedBatch : true;
       return searchMatch && subjectMatch && semesterMatch && courseMatch && batchMatch;
     });
-  }, [searchQuery, selectedSubject, selectedSemester, selectedCourse, selectedBatch, notesOnly]);
-  
-  const allNotesSorted = useMemo(() => {
-    const notes = [...filteredNotes];
-    switch (sortBy) {
-      case 'likes':
-        return notes.sort((a, b) => b.likes - a.likes);
-      case 'downloads':
-        return notes.sort((a, b) => b.downloads - a.downloads);
-      case 'rating':
-        return notes.sort((a, b) => b.averageRating - a.averageRating);
-      default:
-        // Return a stable sort based on creation date if no specific sort is chosen
-        return notes.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-    }
-  }, [filteredNotes, sortBy]);
+  }, [searchQuery, selectedSubject, selectedSemester, selectedCourse, selectedBatch, questionPapers]);
 
-  const topRatedNotes = useMemo(() => {
-    return [...filteredNotes].sort((a, b) => b.averageRating - a.averageRating);
-  }, [filteredNotes]);
+  const ptuPapers = useMemo(() => filteredPapers.filter(p => p.paperType === 'PTU'), [filteredPapers]);
+  const mst1Papers = useMemo(() => filteredPapers.filter(p => p.paperType === 'MST1'), [filteredPapers]);
+  const mst2Papers = useMemo(() => filteredPapers.filter(p => p.paperType === 'MST2'), [filteredPapers]);
 
   const resetFilters = () => {
     setSearchQuery('');
@@ -75,23 +56,22 @@ export default function NotesPage() {
     setSelectedSemester('all');
     setSelectedCourse('all');
     setSelectedBatch('all');
-    setSortBy('rating');
   }
 
   const isFiltered = searchQuery || selectedSubject !== 'all' || selectedSemester !== 'all' || selectedCourse !== 'all' || selectedBatch !== 'all';
 
-  const NoteGrid = ({ notes }: { notes: Note[] }) => {
-    if (notes.length === 0) {
+  const PaperGrid = ({ papers }: { papers: Note[] }) => {
+    if (papers.length === 0) {
       return (
         <div className="text-center py-16 text-muted-foreground col-span-full">
-          <h3 className="text-xl font-semibold">No notes found</h3>
+          <h3 className="text-xl font-semibold">No papers found</h3>
           <p>Try adjusting your filters or search query.</p>
         </div>
       );
     }
     return (
       <>
-        {notes.map((note) => (
+        {papers.map((note) => (
           <NoteCard key={note.id} note={note} />
         ))}
       </>
@@ -101,11 +81,11 @@ export default function NotesPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col gap-4 mb-8">
-        <h1 className="text-4xl font-headline font-bold">Notes Library</h1>
-        <p className="text-muted-foreground">Browse, search, and discover notes shared by your peers.</p>
+        <h1 className="text-4xl font-headline font-bold">Question Papers Library</h1>
+        <p className="text-muted-foreground">Find previous year question papers for your exams.</p>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 mt-4">
-          <div className="relative xl:col-span-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mt-4">
+          <div className="relative lg:col-span-2">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
               placeholder="Search by keyword..."
@@ -115,55 +95,26 @@ export default function NotesPage() {
             />
           </div>
           <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-            <SelectTrigger>
-              <SelectValue placeholder="Filter by Subject" />
-            </SelectTrigger>
+            <SelectTrigger><SelectValue placeholder="Filter by Subject" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Subjects</SelectItem>
               {subjects.map(subject => <SelectItem key={subject} value={subject}>{subject}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={selectedSemester} onValueChange={setSelectedSemester}>
-            <SelectTrigger>
-              <SelectValue placeholder="Filter by Semester" />
-            </SelectTrigger>
+            <SelectTrigger><SelectValue placeholder="Filter by Semester" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Semesters</SelectItem>
               {semesters.map(semester => <SelectItem key={semester} value={String(semester)}>Semester {semester}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={selectedCourse} onValueChange={setSelectedCourse}>
-            <SelectTrigger>
-              <SelectValue placeholder="Filter by Course" />
-            </SelectTrigger>
+            <SelectTrigger><SelectValue placeholder="Filter by Course" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Courses</SelectItem>
               {courses.map(course => <SelectItem key={course} value={course}>{course}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Select value={selectedBatch} onValueChange={setSelectedBatch}>
-            <SelectTrigger>
-              <SelectValue placeholder="Filter by Batch" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Batches</SelectItem>
-              {batches.map(batch => <SelectItem key={batch} value={batch}>{batch}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 mt-2">
-            <div className="xl:col-start-3">
-             <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger>
-                <SelectValue placeholder="Sort by Popularity" />
-                </SelectTrigger>
-                <SelectContent>
-                <SelectItem value="rating">Highest Rated</SelectItem>
-                <SelectItem value="likes">Most Liked</SelectItem>
-                <SelectItem value="downloads">Most Downloaded</SelectItem>
-                </SelectContent>
-            </Select>
-            </div>
         </div>
 
         {isFiltered && (
@@ -176,19 +127,31 @@ export default function NotesPage() {
         )}
       </div>
 
-      <Tabs defaultValue="all-notes">
-        <TabsList className="mb-6">
-          <TabsTrigger value="all-notes">All Notes</TabsTrigger>
-          <TabsTrigger value="top-rated">Top Rated</TabsTrigger>
+      <Tabs defaultValue="all">
+        <TabsList className="mb-6 grid w-full grid-cols-4">
+          <TabsTrigger value="all">All Papers</TabsTrigger>
+          <TabsTrigger value="ptu">PTU</TabsTrigger>
+          <TabsTrigger value="mst1">MST1</TabsTrigger>
+          <TabsTrigger value="mst2">MST2</TabsTrigger>
         </TabsList>
-        <TabsContent value="all-notes">
+        <TabsContent value="all">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            <NoteGrid notes={allNotesSorted} />
+            <PaperGrid papers={filteredPapers} />
           </div>
         </TabsContent>
-        <TabsContent value="top-rated">
+        <TabsContent value="ptu">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            <NoteGrid notes={topRatedNotes} />
+            <PaperGrid papers={ptuPapers} />
+          </div>
+        </TabsContent>
+        <TabsContent value="mst1">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <PaperGrid papers={mst1Papers} />
+          </div>
+        </TabsContent>
+        <TabsContent value="mst2">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <PaperGrid papers={mst2Papers} />
           </div>
         </TabsContent>
       </Tabs>

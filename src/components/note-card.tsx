@@ -101,7 +101,7 @@ export default function NoteCard({ note }: { note: Note }) {
   const handleDownload = (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (!user) {
       e.preventDefault();
-      handleAuthAction(() => {}, "Please log in to download notes.");
+      handleAuthAction(() => {}, "Please log in to download files.");
     }
   };
   
@@ -117,18 +117,18 @@ export default function NoteCard({ note }: { note: Note }) {
         }
         toast({
             title: "Feedback Submitted",
-            description: "Thank you for rating this note!",
+            description: "Thank you for rating!",
         });
-    }, "Please log in to rate notes.");
+    }, "Please log in to rate content.");
   }
   
   const handleReport = () => {
     handleAuthAction(() => {
       toast({
-        title: "Note Reported",
-        description: "Thank you, our team will review this note shortly.",
+        title: "Content Reported",
+        description: "Thank you, our team will review this content shortly.",
       });
-    }, "You need to be logged in to report notes.");
+    }, "You need to be logged in to report content.");
   }
   
   const handleCommentSubmit = () => {
@@ -208,11 +208,14 @@ export default function NoteCard({ note }: { note: Note }) {
                   <Flag className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent><p>Report note</p></TooltipContent>
+              <TooltipContent><p>Report content</p></TooltipContent>
             </Tooltip>
           </div>
         </div>
         <CardDescription className="flex flex-wrap gap-2">
+          {note.category === 'questionPaper' && note.paperType && (
+            <Badge variant="destructive">{note.paperType}</Badge>
+          )}
           <Badge variant="secondary">{note.subject}</Badge>
           <Badge variant="outline">Sem {note.semester}</Badge>
           <Badge variant="outline">{note.course}</Badge>
@@ -243,7 +246,7 @@ export default function NoteCard({ note }: { note: Note }) {
             <Button 
                 variant="outline" 
                 size="sm" 
-                onClick={() => handleAuthAction(handleLike, "Please log in to like notes.")} 
+                onClick={() => handleAuthAction(handleLike, "Please log in to like content.")} 
                 className="flex-1 group transition-colors duration-200"
             >
                 <ThumbsUp className={cn("h-4 w-4 mr-1 group-hover:text-primary transition-colors", voted === 'like' && "text-primary fill-primary/20")} /> {likes}
@@ -251,7 +254,7 @@ export default function NoteCard({ note }: { note: Note }) {
             <Button 
                 variant="outline" 
                 size="sm" 
-                onClick={() => handleAuthAction(handleDislike, "Please log in to dislike notes.")} 
+                onClick={() => handleAuthAction(handleDislike, "Please log in to dislike content.")} 
                 className="flex-1 group transition-colors duration-200"
             >
                 <ThumbsDown className={cn("h-4 w-4 mr-1 group-hover:text-destructive transition-colors", voted === 'dislike' && "text-destructive fill-destructive/20")} /> {dislikes}
@@ -271,7 +274,7 @@ export default function NoteCard({ note }: { note: Note }) {
                     </DialogHeader>
                     <div className="grid md:grid-cols-5 gap-6 flex-grow min-h-0">
                       <div className="md:col-span-3 relative h-full rounded-lg overflow-hidden border">
-                        <Image src="https://placehold.co/800x1100.png" alt="Note preview" layout="fill" objectFit="contain" data-ai-hint="document page" />
+                        <Image src="https://placehold.co/800x1100.png" alt="Content preview" layout="fill" objectFit="contain" data-ai-hint="document page" />
                       </div>
                       <div className="md:col-span-2 flex flex-col h-full">
                         <Tabs defaultValue="discussion" className="flex flex-col h-full">
@@ -393,7 +396,7 @@ export default function NoteCard({ note }: { note: Note }) {
                                 <Separator className="my-4" />
                                 <div className="mt-auto">
                                     <Textarea 
-                                        placeholder={user ? "Ask a new question about this note..." : "Log in to ask a question."}
+                                        placeholder={user ? "Ask a new question about this content..." : "Log in to ask a question."}
                                         className="mb-2"
                                         value={newQuestion}
                                         onChange={(e) => setNewQuestion(e.target.value)}
@@ -417,7 +420,7 @@ export default function NoteCard({ note }: { note: Note }) {
               <PopoverContent className="w-80">
                 <div className="grid gap-4">
                   <div className="space-y-2">
-                    <h4 className="font-medium leading-none">Rate this note</h4>
+                    <h4 className="font-medium leading-none">Rate this content</h4>
                     <p className="text-sm text-muted-foreground">
                       Share your feedback with the community.
                     </p>

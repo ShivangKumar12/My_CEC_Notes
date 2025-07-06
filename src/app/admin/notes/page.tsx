@@ -12,12 +12,12 @@ import Link from 'next/link';
 export default function AdminNotesPage() {
   return (
     <div className="flex flex-col gap-8">
-      <h1 className="text-3xl font-bold">Manage Notes</h1>
+      <h1 className="text-3xl font-bold">Manage Content</h1>
       <Card>
         <CardHeader>
-          <CardTitle>All Notes</CardTitle>
+          <CardTitle>All Content</CardTitle>
           <CardDescription>
-            A list of all notes uploaded to the platform.
+            A list of all notes and question papers uploaded to the platform.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -25,6 +25,7 @@ export default function AdminNotesPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Title</TableHead>
+                <TableHead>Category</TableHead>
                 <TableHead>Uploader</TableHead>
                 <TableHead>Subject</TableHead>
                 <TableHead>Downloads</TableHead>
@@ -36,6 +37,13 @@ export default function AdminNotesPage() {
               {mockNotes.map((note) => (
                 <TableRow key={note.id}>
                   <TableCell className="font-medium">{note.title}</TableCell>
+                   <TableCell>
+                    {note.category === 'questionPaper' ? (
+                      <Badge variant="destructive">{note.paperType}</Badge>
+                    ) : (
+                      <Badge variant="secondary">Note</Badge>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Avatar className="h-8 w-8">
@@ -45,7 +53,7 @@ export default function AdminNotesPage() {
                       <span>{note.uploader.name}</span>
                     </div>
                   </TableCell>
-                  <TableCell><Badge variant="secondary">{note.subject}</Badge></TableCell>
+                  <TableCell><Badge variant="outline">{note.subject}</Badge></TableCell>
                   <TableCell>{note.downloads}</TableCell>
                   <TableCell>{note.averageRating.toFixed(1)} ({note.ratingsCount})</TableCell>
                   <TableCell className="text-right">

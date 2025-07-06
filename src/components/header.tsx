@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpenCheck, Home, Upload, User as UserIcon } from 'lucide-react';
+import { BookOpenCheck, Home, Upload, User as UserIcon, FileQuestion } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import UserAuthButton from './user-auth-button';
 import { ThemeToggle } from './theme-toggle';
 
 const navLinks = [
   { href: '/notes', label: 'Notes', icon: Home },
+  { href: '/question-papers', label: 'Question Papers', icon: FileQuestion },
   { href: '/upload', label: 'Upload', icon: Upload },
   { href: '/dashboard', label: 'Dashboard', icon: UserIcon },
 ];

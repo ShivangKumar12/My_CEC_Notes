@@ -31,6 +31,8 @@ export interface Question {
 export interface Note {
   id: string;
   title: string;
+  category: 'note' | 'questionPaper';
+  paperType?: 'PTU' | 'MST1' | 'MST2';
   subject: string;
   semester: number;
   course: string;
