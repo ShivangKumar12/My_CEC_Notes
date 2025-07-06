@@ -10,11 +10,14 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Upload } from 'lucide-react';
+import { mockCourses, mockBatches, mockSubjects, mockSemesters } from '@/lib/mock-data';
 
 const uploadSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters long.'),
   subject: z.string().min(3, 'Subject is required.'),
   semester: z.coerce.number().min(1).max(10),
+  course: z.string().min(3, 'Course is required.'),
+  batch: z.string().min(3, 'Batch is required.'),
   file: z.any().refine((files) => files?.length === 1, 'File is required.'),
 });
 
@@ -25,7 +28,8 @@ export default function UploadPage() {
     defaultValues: {
       title: '',
       subject: '',
-      semester: 1,
+      course: '',
+      batch: '',
     },
   });
 
@@ -65,15 +69,26 @@ export default function UploadPage() {
                 )}
               />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
+                 <FormField
                   control={form.control}
                   name="subject"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Subject</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., Physics" {...field} />
-                      </FormControl>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a subject" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {mockSubjects.map((subject) => (
+                            <SelectItem key={subject} value={subject}>
+                              {subject}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -91,9 +106,57 @@ export default function UploadPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {[...Array(8)].map((_, i) => (
-                            <SelectItem key={i + 1} value={String(i + 1)}>
-                              Semester {i + 1}
+                          {mockSemesters.map((semester) => (
+                            <SelectItem key={semester} value={String(semester)}>
+                              Semester {semester}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="course"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Course</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a course" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {mockCourses.map((course) => (
+                            <SelectItem key={course} value={course}>
+                              {course}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="batch"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Batch</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a batch" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {mockBatches.map((batch) => (
+                            <SelectItem key={batch} value={batch}>
+                              {batch}
                             </SelectItem>
                           ))}
                         </SelectContent>

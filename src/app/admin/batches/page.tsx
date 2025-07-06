@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { mockSubjects } from '@/lib/mock-data';
+import { mockBatches } from '@/lib/mock-data';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -11,92 +11,92 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { PlusCircle, Pencil, Trash2 } from 'lucide-react';
 
-export default function AdminSubjectsPage() {
+export default function AdminBatchesPage() {
   const { toast } = useToast();
-  const [subjects, setSubjects] = useState(mockSubjects);
+  const [batches, setBatches] = useState(mockBatches);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [currentSubject, setCurrentSubject] = useState<string | null>(null);
-  const [subjectName, setSubjectName] = useState('');
+  const [currentBatch, setCurrentBatch] = useState<string | null>(null);
+  const [batchName, setBatchName] = useState('');
 
-  const handleOpenDialog = (subject?: string) => {
-    if (subject) {
-      setCurrentSubject(subject);
-      setSubjectName(subject);
+  const handleOpenDialog = (batch?: string) => {
+    if (batch) {
+      setCurrentBatch(batch);
+      setBatchName(batch);
     } else {
-      setCurrentSubject(null);
-      setSubjectName('');
+      setCurrentBatch(null);
+      setBatchName('');
     }
     setIsDialogOpen(true);
   };
 
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
-    setCurrentSubject(null);
-    setSubjectName('');
+    setCurrentBatch(null);
+    setBatchName('');
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!subjectName.trim()) {
-      toast({ title: 'Error', description: 'Subject name cannot be empty.', variant: 'destructive' });
+    if (!batchName.trim()) {
+      toast({ title: 'Error', description: 'Batch name cannot be empty.', variant: 'destructive' });
       return;
     }
 
-    if (currentSubject) {
-      // Edit existing subject
-      setSubjects(subjects.map(s => s === currentSubject ? subjectName.trim() : s));
-      toast({ title: 'Success', description: 'Subject updated successfully.' });
+    if (currentBatch) {
+      // Edit existing batch
+      setBatches(batches.map(s => s === currentBatch ? batchName.trim() : s));
+      toast({ title: 'Success', description: 'Batch updated successfully.' });
     } else {
-      // Add new subject
-      if (subjects.find(s => s.toLowerCase() === subjectName.trim().toLowerCase())) {
-        toast({ title: 'Error', description: 'Subject already exists.', variant: 'destructive' });
+      // Add new batch
+      if (batches.find(s => s.toLowerCase() === batchName.trim().toLowerCase())) {
+        toast({ title: 'Error', description: 'Batch already exists.', variant: 'destructive' });
         return;
       }
-      setSubjects([...subjects, subjectName.trim()]);
-      toast({ title: 'Success', description: 'Subject added successfully.' });
+      setBatches([...batches, batchName.trim()]);
+      toast({ title: 'Success', description: 'Batch added successfully.' });
     }
 
     handleCloseDialog();
   };
   
-  const handleDelete = (subjectToDelete: string) => {
-    setSubjects(subjects.filter(s => s !== subjectToDelete));
-    toast({ title: 'Success', description: `Subject "${subjectToDelete}" deleted.` });
+  const handleDelete = (batchToDelete: string) => {
+    setBatches(batches.filter(s => s !== batchToDelete));
+    toast({ title: 'Success', description: `Batch "${batchToDelete}" deleted.` });
   }
 
   return (
     <div className="flex flex-col gap-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Manage Subjects</h1>
+        <h1 className="text-3xl font-bold">Manage Batches</h1>
         <Button onClick={() => handleOpenDialog()}>
           <PlusCircle className="mr-2 h-4 w-4" />
-          Add Subject
+          Add Batch
         </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>All Subjects</CardTitle>
-          <CardDescription>Add, edit, or remove subjects available on the platform.</CardDescription>
+          <CardTitle>All Batches</CardTitle>
+          <CardDescription>Add, edit, or remove batches available on the platform.</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Subject Name</TableHead>
+                <TableHead>Batch Name</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {subjects.sort().map((subject) => (
-                <TableRow key={subject}>
-                  <TableCell className="font-medium">{subject}</TableCell>
+              {batches.sort().map((batch) => (
+                <TableRow key={batch}>
+                  <TableCell className="font-medium">{batch}</TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(subject)}>
+                    <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(batch)}>
                       <Pencil className="h-4 w-4" />
                       <span className="sr-only">Edit</span>
                     </Button>
-                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(subject)}>
+                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(batch)}>
                       <Trash2 className="h-4 w-4" />
                       <span className="sr-only">Delete</span>
                     </Button>
@@ -112,9 +112,9 @@ export default function AdminSubjectsPage() {
         <DialogContent className="sm:max-w-[425px]" onEscapeKeyDown={handleCloseDialog}>
           <form onSubmit={handleSubmit}>
             <DialogHeader>
-              <DialogTitle>{currentSubject ? 'Edit Subject' : 'Add New Subject'}</DialogTitle>
+              <DialogTitle>{currentBatch ? 'Edit Batch' : 'Add New Batch'}</DialogTitle>
               <DialogDescription>
-                {currentSubject ? `Make changes to the subject name.` : 'Add a new subject to the list of available subjects.'}
+                {currentBatch ? `Make changes to the batch name.` : 'Add a new batch to the list of available batches.'}
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
@@ -124,10 +124,10 @@ export default function AdminSubjectsPage() {
                 </Label>
                 <Input
                   id="name"
-                  value={subjectName}
-                  onChange={(e) => setSubjectName(e.target.value)}
+                  value={batchName}
+                  onChange={(e) => setBatchName(e.target.value)}
                   className="col-span-3"
-                  placeholder="e.g., Quantum Computing"
+                  placeholder="e.g., 2021-2025"
                   autoFocus
                 />
               </div>

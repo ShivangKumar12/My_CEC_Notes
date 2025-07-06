@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { mockNotes } from '@/lib/mock-data';
+import { mockSemesters } from '@/lib/mock-data';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -11,11 +11,9 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { PlusCircle, Pencil, Trash2 } from 'lucide-react';
 
-const initialSemesters = [...new Set(mockNotes.map((note) => note.semester))];
-
 export default function AdminSemestersPage() {
   const { toast } = useToast();
-  const [semesters, setSemesters] = useState(initialSemesters);
+  const [semesters, setSemesters] = useState(mockSemesters);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentSemester, setCurrentSemester] = useState<number | null>(null);
   const [semesterValue, setSemesterValue] = useState('');

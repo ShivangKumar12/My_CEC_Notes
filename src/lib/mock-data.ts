@@ -7,12 +7,20 @@ export const mockUsers: User[] = [
   { id: 'user-4', name: 'Diana Miller', avatarUrl: 'https://i.pravatar.cc/150?u=user-4' },
 ];
 
+export const mockSubjects: string[] = ['Mathematics', 'Digital Logic', 'Data Structures', 'Operating Systems', 'Computer Networks', 'Database Systems', 'Software Engineering', 'Machine Learning'];
+export const mockSemesters: number[] = [1, 2, 3, 4, 5, 6, 7, 8];
+export const mockCourses: string[] = ['B.Tech CSE', 'B.Tech ECE', 'B.Tech ME'];
+export const mockBatches: string[] = ['2020-2024', '2021-2025', '2022-2026', '2023-2027'];
+
+
 export const mockNotes: Note[] = [
   {
     id: 'note-1',
     title: 'Advanced Calculus Cheatsheet',
     subject: 'Mathematics',
     semester: 4,
+    course: 'B.Tech CSE',
+    batch: '2021-2025',
     uploader: mockUsers[0],
     fileUrl: '#',
     fileType: 'pdf',
@@ -65,6 +73,8 @@ export const mockNotes: Note[] = [
     title: 'Digital Logic Design Fundamentals',
     subject: 'Digital Logic',
     semester: 5,
+    course: 'B.Tech CSE',
+    batch: '2020-2024',
     uploader: mockUsers[1],
     fileUrl: '#',
     fileType: 'pdf',
@@ -85,6 +95,8 @@ export const mockNotes: Note[] = [
     title: 'Data Structures & Algorithms Summary',
     subject: 'Data Structures',
     semester: 3,
+    course: 'B.Tech CSE',
+    batch: '2021-2025',
     uploader: mockUsers[2],
     fileUrl: '#',
     fileType: 'doc',
@@ -106,6 +118,8 @@ export const mockNotes: Note[] = [
     title: 'Operating Systems Concepts',
     subject: 'Operating Systems',
     semester: 2,
+    course: 'B.Tech ECE',
+    batch: '2022-2026',
     uploader: mockUsers[3],
     fileUrl: '#',
     fileType: 'pdf',
@@ -124,6 +138,8 @@ export const mockNotes: Note[] = [
     title: 'Intro to Computer Networks',
     subject: 'Computer Networks',
     semester: 1,
+    course: 'B.Tech CSE',
+    batch: '2023-2027',
     uploader: mockUsers[0],
     fileUrl: '#',
     fileType: 'doc',
@@ -142,6 +158,8 @@ export const mockNotes: Note[] = [
     title: 'Database Systems Basics',
     subject: 'Database Systems',
     semester: 1,
+    course: 'B.Tech CSE',
+    batch: '2023-2027',
     uploader: mockUsers[1],
     fileUrl: '#',
     fileType: 'pdf',
@@ -160,6 +178,8 @@ export const mockNotes: Note[] = [
     title: 'Software Engineering Principles',
     subject: 'Software Engineering',
     semester: 4,
+    course: 'B.Tech CSE',
+    batch: '2021-2025',
     uploader: mockUsers[2],
     fileUrl: '#',
     fileType: 'doc',
@@ -178,6 +198,8 @@ export const mockNotes: Note[] = [
     title: 'Machine Learning Basics',
     subject: 'Machine Learning',
     semester: 6,
+    course: 'B.Tech ME',
+    batch: '2020-2024',
     uploader: mockUsers[3],
     fileUrl: '#',
     fileType: 'pdf',

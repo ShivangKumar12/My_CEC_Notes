@@ -33,6 +33,8 @@ export interface Note {
   title: string;
   subject: string;
   semester: number;
+  course: string;
+  batch: string;
   uploader: User;
   fileUrl: string;
   fileType: 'pdf' | 'doc';

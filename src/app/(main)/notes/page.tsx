@@ -21,12 +21,16 @@ export default function NotesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('all');
   const [selectedSemester, setSelectedSemester] = useState('all');
+  const [selectedCourse, setSelectedCourse] = useState('all');
+  const [selectedBatch, setSelectedBatch] = useState('all');
   const [sortBy, setSortBy] = useState('rating'); // Default sort by rating
 
   const subjects = [...new Set(mockNotes.map((note) => note.subject))];
   const semesters = [...new Set(mockNotes.map((note) => note.semester))].sort(
     (a, b) => a - b
   );
+  const courses = [...new Set(mockNotes.map((note) => note.course))];
+  const batches = [...new Set(mockNotes.map((note) => note.batch))].sort();
 
   const filteredNotes = useMemo(() => {
     return mockNotes.filter((note) => {
@@ -38,9 +42,11 @@ export default function NotesPage() {
       const semesterMatch = selectedSemester !== 'all'
         ? String(note.semester) === selectedSemester
         : true;
-      return searchMatch && subjectMatch && semesterMatch;
+      const courseMatch = selectedCourse !== 'all' ? note.course === selectedCourse : true;
+      const batchMatch = selectedBatch !== 'all' ? note.batch === selectedBatch : true;
+      return searchMatch && subjectMatch && semesterMatch && courseMatch && batchMatch;
     });
-  }, [searchQuery, selectedSubject, selectedSemester]);
+  }, [searchQuery, selectedSubject, selectedSemester, selectedCourse, selectedBatch]);
   
   const allNotesSorted = useMemo(() => {
     const notes = [...filteredNotes];
@@ -65,10 +71,12 @@ export default function NotesPage() {
     setSearchQuery('');
     setSelectedSubject('all');
     setSelectedSemester('all');
+    setSelectedCourse('all');
+    setSelectedBatch('all');
     setSortBy('rating');
   }
 
-  const isFiltered = searchQuery || selectedSubject !== 'all' || selectedSemester !== 'all';
+  const isFiltered = searchQuery || selectedSubject !== 'all' || selectedSemester !== 'all' || selectedCourse !== 'all' || selectedBatch !== 'all';
 
   const NoteGrid = ({ notes }: { notes: Note[] }) => {
     if (notes.length === 0) {
@@ -94,8 +102,8 @@ export default function NotesPage() {
         <h1 className="text-4xl font-headline font-bold">Notes Library</h1>
         <p className="text-muted-foreground">Browse, search, and discover notes shared by your peers.</p>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
-          <div className="relative">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 mt-4">
+          <div className="relative xl:col-span-2">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
               placeholder="Search by keyword..."
@@ -122,19 +130,42 @@ export default function NotesPage() {
               {semesters.map(semester => <SelectItem key={semester} value={String(semester)}>Semester {semester}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Select value={sortBy} onValueChange={setSortBy}>
+          <Select value={selectedCourse} onValueChange={setSelectedCourse}>
             <SelectTrigger>
-              <SelectValue placeholder="Sort by Popularity" />
+              <SelectValue placeholder="Filter by Course" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="rating">Highest Rated</SelectItem>
-              <SelectItem value="likes">Most Liked</SelectItem>
-              <SelectItem value="downloads">Most Downloaded</SelectItem>
+              <SelectItem value="all">All Courses</SelectItem>
+              {courses.map(course => <SelectItem key={course} value={course}>{course}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={selectedBatch} onValueChange={setSelectedBatch}>
+            <SelectTrigger>
+              <SelectValue placeholder="Filter by Batch" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Batches</SelectItem>
+              {batches.map(batch => <SelectItem key={batch} value={batch}>{batch}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 mt-2">
+            <div className="xl:col-start-3">
+             <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger>
+                <SelectValue placeholder="Sort by Popularity" />
+                </SelectTrigger>
+                <SelectContent>
+                <SelectItem value="rating">Highest Rated</SelectItem>
+                <SelectItem value="likes">Most Liked</SelectItem>
+                <SelectItem value="downloads">Most Downloaded</SelectItem>
+                </SelectContent>
+            </Select>
+            </div>
+        </div>
+
         {isFiltered && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 mt-2">
               <Button variant="ghost" onClick={resetFilters} className="text-muted-foreground hover:text-foreground">
                 <ListX className="mr-2 h-4 w-4" />
                 Clear Filters

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { mockSubjects } from '@/lib/mock-data';
+import { mockCourses } from '@/lib/mock-data';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -11,92 +11,92 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { PlusCircle, Pencil, Trash2 } from 'lucide-react';
 
-export default function AdminSubjectsPage() {
+export default function AdminCoursesPage() {
   const { toast } = useToast();
-  const [subjects, setSubjects] = useState(mockSubjects);
+  const [courses, setCourses] = useState(mockCourses);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [currentSubject, setCurrentSubject] = useState<string | null>(null);
-  const [subjectName, setSubjectName] = useState('');
+  const [currentCourse, setCurrentCourse] = useState<string | null>(null);
+  const [courseName, setCourseName] = useState('');
 
-  const handleOpenDialog = (subject?: string) => {
-    if (subject) {
-      setCurrentSubject(subject);
-      setSubjectName(subject);
+  const handleOpenDialog = (course?: string) => {
+    if (course) {
+      setCurrentCourse(course);
+      setCourseName(course);
     } else {
-      setCurrentSubject(null);
-      setSubjectName('');
+      setCurrentCourse(null);
+      setCourseName('');
     }
     setIsDialogOpen(true);
   };
 
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
-    setCurrentSubject(null);
-    setSubjectName('');
+    setCurrentCourse(null);
+    setCourseName('');
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!subjectName.trim()) {
-      toast({ title: 'Error', description: 'Subject name cannot be empty.', variant: 'destructive' });
+    if (!courseName.trim()) {
+      toast({ title: 'Error', description: 'Course name cannot be empty.', variant: 'destructive' });
       return;
     }
 
-    if (currentSubject) {
-      // Edit existing subject
-      setSubjects(subjects.map(s => s === currentSubject ? subjectName.trim() : s));
-      toast({ title: 'Success', description: 'Subject updated successfully.' });
+    if (currentCourse) {
+      // Edit existing course
+      setCourses(courses.map(s => s === currentCourse ? courseName.trim() : s));
+      toast({ title: 'Success', description: 'Course updated successfully.' });
     } else {
-      // Add new subject
-      if (subjects.find(s => s.toLowerCase() === subjectName.trim().toLowerCase())) {
-        toast({ title: 'Error', description: 'Subject already exists.', variant: 'destructive' });
+      // Add new course
+      if (courses.find(s => s.toLowerCase() === courseName.trim().toLowerCase())) {
+        toast({ title: 'Error', description: 'Course already exists.', variant: 'destructive' });
         return;
       }
-      setSubjects([...subjects, subjectName.trim()]);
-      toast({ title: 'Success', description: 'Subject added successfully.' });
+      setCourses([...courses, courseName.trim()]);
+      toast({ title: 'Success', description: 'Course added successfully.' });
     }
 
     handleCloseDialog();
   };
   
-  const handleDelete = (subjectToDelete: string) => {
-    setSubjects(subjects.filter(s => s !== subjectToDelete));
-    toast({ title: 'Success', description: `Subject "${subjectToDelete}" deleted.` });
+  const handleDelete = (courseToDelete: string) => {
+    setCourses(courses.filter(s => s !== courseToDelete));
+    toast({ title: 'Success', description: `Course "${courseToDelete}" deleted.` });
   }
 
   return (
     <div className="flex flex-col gap-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Manage Subjects</h1>
+        <h1 className="text-3xl font-bold">Manage Courses</h1>
         <Button onClick={() => handleOpenDialog()}>
           <PlusCircle className="mr-2 h-4 w-4" />
-          Add Subject
+          Add Course
         </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>All Subjects</CardTitle>
-          <CardDescription>Add, edit, or remove subjects available on the platform.</CardDescription>
+          <CardTitle>All Courses</CardTitle>
+          <CardDescription>Add, edit, or remove courses available on the platform.</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Subject Name</TableHead>
+                <TableHead>Course Name</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {subjects.sort().map((subject) => (
-                <TableRow key={subject}>
-                  <TableCell className="font-medium">{subject}</TableCell>
+              {courses.sort().map((course) => (
+                <TableRow key={course}>
+                  <TableCell className="font-medium">{course}</TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(subject)}>
+                    <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(course)}>
                       <Pencil className="h-4 w-4" />
                       <span className="sr-only">Edit</span>
                     </Button>
-                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(subject)}>
+                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(course)}>
                       <Trash2 className="h-4 w-4" />
                       <span className="sr-only">Delete</span>
                     </Button>
@@ -112,9 +112,9 @@ export default function AdminSubjectsPage() {
         <DialogContent className="sm:max-w-[425px]" onEscapeKeyDown={handleCloseDialog}>
           <form onSubmit={handleSubmit}>
             <DialogHeader>
-              <DialogTitle>{currentSubject ? 'Edit Subject' : 'Add New Subject'}</DialogTitle>
+              <DialogTitle>{currentCourse ? 'Edit Course' : 'Add New Course'}</DialogTitle>
               <DialogDescription>
-                {currentSubject ? `Make changes to the subject name.` : 'Add a new subject to the list of available subjects.'}
+                {currentCourse ? `Make changes to the course name.` : 'Add a new course to the list of available courses.'}
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
@@ -124,10 +124,10 @@ export default function AdminSubjectsPage() {
                 </Label>
                 <Input
                   id="name"
-                  value={subjectName}
-                  onChange={(e) => setSubjectName(e.target.value)}
+                  value={courseName}
+                  onChange={(e) => setCourseName(e.target.value)}
                   className="col-span-3"
-                  placeholder="e.g., Quantum Computing"
+                  placeholder="e.g., B.Tech CSE"
                   autoFocus
                 />
               </div>

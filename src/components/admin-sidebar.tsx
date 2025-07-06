@@ -10,7 +10,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { BookOpenCheck, FileText, GraduationCap, LayoutDashboard, Library, Users } from "lucide-react"
+import { BookOpenCheck, FileText, GraduationCap, LayoutDashboard, Library, Users, BookCopy, Users2 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { ThemeToggle } from "./theme-toggle"
@@ -23,6 +23,8 @@ const navItems = [
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/subjects", label: "Subjects", icon: Library },
   { href: "/admin/semesters", label: "Semesters", icon: GraduationCap },
+  { href: "/admin/courses", label: "Courses", icon: BookCopy },
+  { href: "/admin/batches", label: "Batches", icon: Users2 },
 ]
 
 export default function AdminSidebar() {

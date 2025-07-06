@@ -212,9 +212,11 @@ export default function NoteCard({ note }: { note: Note }) {
             </Tooltip>
           </div>
         </div>
-        <CardDescription>
+        <CardDescription className="flex flex-wrap gap-2">
           <Badge variant="secondary">{note.subject}</Badge>
-          <Badge variant="outline" className="ml-2">Sem {note.semester}</Badge>
+          <Badge variant="outline">Sem {note.semester}</Badge>
+          <Badge variant="outline">{note.course}</Badge>
+          <Badge variant="outline">{note.batch}</Badge>
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-grow space-y-4">
