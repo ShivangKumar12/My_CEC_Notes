@@ -57,7 +57,7 @@ export default function NotesPage() {
     const fetchNotes = async () => {
       setIsLoading(true);
       try {
-        const q = query(collection(db, 'notes'), where('category', '==', 'note'), orderBy('createdAt', 'desc'));
+        const q = query(collection(db, 'notes'), orderBy('createdAt', 'desc'));
         const querySnapshot = await getDocs(q);
         const notesData = querySnapshot.docs.map(doc => {
           const data = doc.data();
@@ -67,7 +67,7 @@ export default function NotesPage() {
             createdAt: data.createdAt.toDate(),
           } as Note;
         });
-        setAllNotes(notesData);
+        setAllNotes(notesData.filter(n => n.category === 'note'));
       } catch (error) {
         console.error("Error fetching notes:", error);
       } finally {

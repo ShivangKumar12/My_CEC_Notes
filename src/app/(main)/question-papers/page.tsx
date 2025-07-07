@@ -16,7 +16,7 @@ import { Search, ListX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { Note } from '@/lib/types';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function QuestionPapersPage() {
@@ -56,7 +56,7 @@ export default function QuestionPapersPage() {
       setIsLoading(true);
       try {
         const notesRef = collection(db, 'notes');
-        let q = query(notesRef, where('category', '==', 'questionPaper'));
+        const q = query(notesRef, orderBy('createdAt', 'desc'));
 
         const querySnapshot = await getDocs(q);
         const papersData = querySnapshot.docs.map(doc => {
@@ -67,7 +67,7 @@ export default function QuestionPapersPage() {
             createdAt: data.createdAt.toDate(),
           } as Note;
         });
-        setQuestionPapers(papersData);
+        setQuestionPapers(papersData.filter(p => p.category === 'questionPaper'));
       } catch (error) {
         console.error("Error fetching question papers:", error);
       } finally {
