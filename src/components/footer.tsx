@@ -4,9 +4,9 @@ import { BookOpenCheck, Github, Linkedin, Instagram } from 'lucide-react';
 
 const subjects = ['Data Structures', 'Operating Systems', 'Computer Networks', 'Database Systems', 'Machine Learning', 'Mathematics'];
 const socialLinks = [
-  { icon: Instagram, href: '#', name: 'Instagram' },
-  { icon: Github, href: '#', name: 'GitHub' },
-  { icon: Linkedin, href: '#', name: 'LinkedIn' },
+  { icon: Instagram, href: 'https://www.instagram.com/shivang__18.12/', name: 'Instagram' },
+  { icon: Github, href: 'https://github.com/ShivangKumar12', name: 'GitHub' },
+  { icon: Linkedin, href: 'https://www.linkedin.com/in/shivang-kumar98/', name: 'LinkedIn' },
 ];
 
 export default function Footer() {
