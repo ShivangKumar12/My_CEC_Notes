@@ -79,7 +79,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
       toast({ title: "Login Successful", description: "Welcome to MyCECNotes!" });
-    } catch (error) {
+    } catch (error: any) {
+      // Don't show an error toast if the user intentionally closes the popup.
+      if (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user') {
+        console.log("Login popup closed by user.");
+        return;
+      }
       console.error("Google login error:", error);
       toast({ title: "Login Failed", description: "Could not log in with Google.", variant: "destructive" });
     }
