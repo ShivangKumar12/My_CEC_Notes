@@ -91,20 +91,18 @@ export default function NoteCard({ note: initialNote }: { note: Note }) {
       const userHasLiked = note.likedBy?.includes(user.uid);
       const userHasDisliked = note.dislikedBy?.includes(user.uid);
       
-      // Create optimistic update objects
       const optimisticNote = JSON.parse(JSON.stringify(note));
 
-      // Ensure arrays exist for optimistic update
       if (!optimisticNote.likedBy) optimisticNote.likedBy = [];
       if (!optimisticNote.dislikedBy) optimisticNote.dislikedBy = [];
 
       if (voteType === 'like') {
-        if (userHasLiked) { // --- UNLIKE ---
+        if (userHasLiked) { 
           batch.update(noteRef, { likes: increment(-1), likedBy: arrayRemove(user.uid) });
           optimisticNote.likes--;
           optimisticNote.likedBy = optimisticNote.likedBy.filter((id: string) => id !== user.uid);
           setUserInteraction(null);
-        } else { // --- LIKE ---
+        } else { 
           batch.update(noteRef, { likes: increment(1), likedBy: arrayUnion(user.uid) });
           optimisticNote.likes++;
           optimisticNote.likedBy.push(user.uid);
@@ -115,13 +113,13 @@ export default function NoteCard({ note: initialNote }: { note: Note }) {
           }
           setUserInteraction('liked');
         }
-      } else { // voteType is 'dislike'
-        if (userHasDisliked) { // --- UNDISLIKE ---
+      } else { 
+        if (userHasDisliked) { 
           batch.update(noteRef, { dislikes: increment(-1), dislikedBy: arrayRemove(user.uid) });
           optimisticNote.dislikes--;
           optimisticNote.dislikedBy = optimisticNote.dislikedBy.filter((id: string) => id !== user.uid);
           setUserInteraction(null);
-        } else { // --- DISLIKE ---
+        } else { 
           batch.update(noteRef, { dislikes: increment(1), dislikedBy: arrayUnion(user.uid) });
           optimisticNote.dislikes++;
           optimisticNote.dislikedBy.push(user.uid);
@@ -134,7 +132,7 @@ export default function NoteCard({ note: initialNote }: { note: Note }) {
         }
       }
       
-      setNote(optimisticNote); // Optimistic UI update
+      setNote(optimisticNote); 
       await batch.commit();
 
     }, "You must be logged in to vote.");
@@ -258,10 +256,10 @@ export default function NoteCard({ note: initialNote }: { note: Note }) {
                 <ThumbsDown className="h-4 w-4 mr-1" /> {note.dislikes || 0}
             </Button>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-end gap-2">
             <Dialog>
                 <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="flex-1"><Eye className="h-4 w-4 mr-1" /> Preview</Button>
+                    <Button variant="outline" size="sm"><Eye className="h-4 w-4 mr-1" /> Preview</Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-6xl h-[90vh] flex flex-col">
                     <DialogHeader>
@@ -273,18 +271,6 @@ export default function NoteCard({ note: initialNote }: { note: Note }) {
                     <div className="grid md:grid-cols-5 gap-6 flex-grow min-h-0">
                       <div className="md:col-span-3 relative h-full rounded-lg overflow-hidden border">
                         <iframe src={note.fileUrl} className="w-full h-full" title="File Preview"></iframe>
-                         <TooltipProvider>
-                           <Tooltip>
-                              <TooltipTrigger asChild>
-                                  <Button variant="destructive" size="icon" className="absolute top-2 right-2 z-10 h-8 w-8" onClick={handleReport} disabled={hasReported}>
-                                      <Flag className="h-4 w-4" />
-                                  </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                  <p>{hasReported ? 'You have reported this' : 'Report this content'}</p>
-                              </TooltipContent>
-                           </Tooltip>
-                         </TooltipProvider>
                       </div>
                       <div className="md:col-span-2 flex flex-col h-full">
                         <Tabs defaultValue="discussion" className="flex flex-col h-full">
@@ -337,7 +323,7 @@ export default function NoteCard({ note: initialNote }: { note: Note }) {
             
             <Popover>
               <PopoverTrigger asChild>
-                <Button size="sm" className="flex-1">
+                <Button size="sm">
                   <Star className="h-4 w-4 mr-1" /> Rate
                 </Button>
               </PopoverTrigger>
@@ -356,6 +342,20 @@ export default function NoteCard({ note: initialNote }: { note: Note }) {
                 </div>
               </PopoverContent>
             </Popover>
+
+            <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant={hasReported ? "destructive" : "outline"} size="icon" className="h-9 w-9" onClick={handleReport} disabled={hasReported}>
+                            <Flag className="h-4 w-4" />
+                            <span className="sr-only">Report</span>
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>{hasReported ? 'You have reported this' : 'Report this content'}</p>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
         </div>
       </CardFooter>
       <div className="p-4 pt-0 text-center">
