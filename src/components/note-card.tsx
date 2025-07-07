@@ -94,6 +94,10 @@ export default function NoteCard({ note: initialNote }: { note: Note }) {
       // Create optimistic update objects
       const optimisticNote = JSON.parse(JSON.stringify(note));
 
+      // Ensure arrays exist for optimistic update
+      if (!optimisticNote.likedBy) optimisticNote.likedBy = [];
+      if (!optimisticNote.dislikedBy) optimisticNote.dislikedBy = [];
+
       if (voteType === 'like') {
         if (userHasLiked) { // --- UNLIKE ---
           batch.update(noteRef, { likes: increment(-1), likedBy: arrayRemove(user.uid) });
