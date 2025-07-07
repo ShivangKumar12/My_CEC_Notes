@@ -26,7 +26,7 @@ export default function NotesPage() {
   const [selectedSemester, setSelectedSemester] = useState('all');
   const [selectedCourse, setSelectedCourse] = useState('all');
   const [selectedBatch, setSelectedBatch] = useState('all');
-  const [sortBy, setSortBy] = useState('rating'); // Default sort by rating
+  const [sortBy, setSortBy] = useState('rating');
 
   const [allNotes, setAllNotes] = useState<Note[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -57,19 +57,7 @@ export default function NotesPage() {
     const fetchNotes = async () => {
       setIsLoading(true);
       try {
-        let q = query(collection(db, 'notes'), where('category', '==', 'note'));
-        
-        // Filtering
-        if (selectedSubject !== 'all') q = query(q, where('subject', '==', selectedSubject));
-        if (selectedSemester !== 'all') q = query(q, where('semester', '==', Number(selectedSemester)));
-        if (selectedCourse !== 'all') q = query(q, where('course', '==', selectedCourse));
-        if (selectedBatch !== 'all') q = query(q, where('batch', '==', selectedBatch));
-        
-        // Sorting
-        if(sortBy === 'rating') q = query(q, orderBy('averageRating', 'desc'));
-        if(sortBy === 'likes') q = query(q, orderBy('likes', 'desc'));
-        if(sortBy === 'downloads') q = query(q, orderBy('downloads', 'desc'));
-
+        const q = query(collection(db, 'notes'), where('category', '==', 'note'), orderBy('createdAt', 'desc'));
         const querySnapshot = await getDocs(q);
         const notesData = querySnapshot.docs.map(doc => {
           const data = doc.data();
@@ -79,15 +67,7 @@ export default function NotesPage() {
             createdAt: data.createdAt.toDate(),
           } as Note;
         });
-
-        // Client-side search after fetching
-        const filtered = notesData.filter(note => 
-          searchQuery ? note.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                        note.subject.toLowerCase().includes(searchQuery.toLowerCase())
-                      : true
-        );
-        
-        setAllNotes(filtered);
+        setAllNotes(notesData);
       } catch (error) {
         console.error("Error fetching notes:", error);
       } finally {
@@ -96,7 +76,30 @@ export default function NotesPage() {
     };
     
     fetchNotes();
-  }, [searchQuery, selectedSubject, selectedSemester, selectedCourse, selectedBatch, sortBy]);
+  }, []);
+
+  const filteredNotes = useMemo(() => {
+    let notes = allNotes.filter(note => {
+        const searchMatch = searchQuery
+          ? note.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+            note.subject.toLowerCase().includes(searchQuery.toLowerCase())
+          : true;
+        const subjectMatch = selectedSubject !== 'all' ? note.subject === selectedSubject : true;
+        const semesterMatch = selectedSemester !== 'all' ? note.semester === Number(selectedSemester) : true;
+        const courseMatch = selectedCourse !== 'all' ? note.course === selectedCourse : true;
+        const batchMatch = selectedBatch !== 'all' ? note.batch === selectedBatch : true;
+        return searchMatch && subjectMatch && semesterMatch && courseMatch && batchMatch;
+    });
+
+    notes.sort((a, b) => {
+        if (sortBy === 'rating') return b.averageRating - a.averageRating;
+        if (sortBy === 'likes') return b.likes - a.likes;
+        if (sortBy === 'downloads') return b.downloads - a.downloads;
+        return 0; // Should not happen
+    });
+
+    return notes;
+  }, [allNotes, searchQuery, selectedSubject, selectedSemester, selectedCourse, selectedBatch, sortBy]);
   
   const topRatedNotes = useMemo(() => {
     return [...allNotes].sort((a, b) => b.averageRating - a.averageRating).slice(0, 10);
@@ -230,7 +233,7 @@ export default function NotesPage() {
         </TabsList>
         <TabsContent value="all-notes">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            <NoteGrid notes={allNotes} />
+            <NoteGrid notes={filteredNotes} />
           </div>
         </TabsContent>
         <TabsContent value="top-rated">
