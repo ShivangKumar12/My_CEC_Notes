@@ -32,19 +32,12 @@ export default function AdminLoginPage() {
         });
         router.replace('/admin/dashboard');
       } else {
-        if (result.reason === 'unauthorized') {
-            toast({
-              title: 'Authorization Failed',
-              description: 'You do not have permission to access the admin panel.',
-              variant: 'destructive',
-            });
-        } else {
-            toast({
-              title: 'Login Failed',
-              description: 'Invalid email or password.',
-              variant: 'destructive',
-            });
-        }
+        // Display the specific message from the adminLogin function
+        toast({
+          title: 'Login Failed',
+          description: result.message || 'An unexpected error occurred. Please try again.',
+          variant: 'destructive',
+        });
       }
     } catch (error: any) {
       toast({

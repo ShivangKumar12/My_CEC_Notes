@@ -10,7 +10,8 @@ import { useToast } from '@/hooks/use-toast';
 
 type AdminLoginResult = {
   success: boolean;
-  reason?: 'unauthorized' | 'invalid-credentials';
+  reason?: 'unauthorized' | 'invalid-credentials' | 'too-many-requests' | 'unknown';
+  message?: string;
 };
 
 interface AppContextType {
@@ -112,7 +113,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!auth) {
       console.error("Firebase not initialized. Cannot log in.");
       toast({ title: "Configuration Error", description: "Firebase is not configured. Please check your .env.local file.", variant: "destructive" });
-      return { success: false, reason: 'invalid-credentials' };
+      return { success: false, reason: 'unknown', message: 'Firebase is not properly configured.' };
     }
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -126,11 +127,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       } else {
         // If user is not an admin, sign them out immediately.
         await signOut(auth);
-        return { success: false, reason: 'unauthorized' };
+        return { success: false, reason: 'unauthorized', message: 'You do not have permission to access the admin panel.' };
       }
-    } catch (error) {
-      console.error("Admin login error:", error);
-      return { success: false, reason: 'invalid-credentials' };
+    } catch (error: any) {
+      console.error("Admin login error:", error.code);
+      switch(error.code) {
+        case 'auth/invalid-credential':
+          return { success: false, reason: 'invalid-credentials', message: 'The email or password you entered is incorrect.' };
+        case 'auth/too-many-requests':
+          return { success: false, reason: 'too-many-requests', message: 'Access to this account has been temporarily disabled due to many failed login attempts. Please try again later.' };
+        default:
+          return { success: false, reason: 'unknown', message: 'An unknown error occurred during login.' };
+      }
     }
   };
   
