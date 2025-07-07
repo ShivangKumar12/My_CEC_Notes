@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
+import Link from 'next/link';
 
 export default function DashboardPage() {
   const { user } = useApp();
@@ -69,6 +70,14 @@ export default function DashboardPage() {
               <Skeleton className="h-10 w-full" />
               <Skeleton className="h-10 w-full" />
             </div>
+          ) : userNotes.length === 0 ? (
+            <div className="text-center py-16 text-muted-foreground">
+                <h3 className="text-xl font-semibold">No notes uploaded yet</h3>
+                <p className="mb-4">It looks like you haven't shared any notes. Why not upload your first one?</p>
+                <Button asChild>
+                    <Link href="/upload">Upload a Note</Link>
+                </Button>
+            </div>
           ) : (
             <Table>
               <TableHeader>
@@ -98,11 +107,11 @@ export default function DashboardPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
+                          <DropdownMenuItem disabled>
                             <Pencil className="mr-2 h-4 w-4" />
                             <span>Edit</span>
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive focus:text-destructive">
+                          <DropdownMenuItem className="text-destructive focus:text-destructive" disabled>
                             <Trash2 className="mr-2 h-4 w-4" />
                             <span>Delete</span>
                           </DropdownMenuItem>

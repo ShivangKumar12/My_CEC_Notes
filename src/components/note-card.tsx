@@ -1,7 +1,7 @@
 
 "use client";
 
-import type { Note, UserProfile } from '@/lib/types';
+import type { Note, UserProfile, Feedback } from '@/lib/types';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -61,7 +61,7 @@ export default function NoteCard({ note: initialNote }: { note: Note }) {
   useEffect(() => {
     if (user && note) {
       setUserInteraction(note.likedBy?.includes(user.uid) ? 'liked' : note.dislikedBy?.includes(user.uid) ? 'disliked' : null);
-      setHasReported(note.reportedBy?.includes(user.uid));
+      setHasReported(note.reportedBy?.includes(user.uid) ?? false);
     } else {
       setUserInteraction(null);
       setHasReported(false);
@@ -87,10 +87,10 @@ export default function NoteCard({ note: initialNote }: { note: Note }) {
       
       const batch = writeBatch(db);
 
+      // Create a deep copy for optimistic update, ensuring arrays exist
       const optimisticNote = JSON.parse(JSON.stringify(note));
-
-      if (!optimisticNote.likedBy) optimisticNote.likedBy = [];
-      if (!optimisticNote.dislikedBy) optimisticNote.dislikedBy = [];
+      optimisticNote.likedBy = optimisticNote.likedBy || [];
+      optimisticNote.dislikedBy = optimisticNote.dislikedBy || [];
 
       const userHasLiked = optimisticNote.likedBy.includes(user.uid);
       const userHasDisliked = optimisticNote.dislikedBy.includes(user.uid);
@@ -132,7 +132,11 @@ export default function NoteCard({ note: initialNote }: { note: Note }) {
       }
       
       setNote(optimisticNote); 
-      await batch.commit();
+      await batch.commit().catch(err => {
+        console.error("Failed to vote:", err);
+        setNote(initialNote); // Revert on failure
+        toast({ title: "Error", description: "Could not cast vote. Please try again.", variant: "destructive" });
+      });
 
     }, "You must be logged in to vote.");
   };
@@ -178,14 +182,16 @@ export default function NoteCard({ note: initialNote }: { note: Note }) {
   const handleCommentSubmit = () => handleAuthAction(async () => {
     if (newComment.trim() === "" || !userProfile) return;
     const noteRef = doc(db, 'notes', note.id);
-    const commentData = {
+    const commentData: Feedback = {
         id: crypto.randomUUID(),
         user: { id: userProfile.id, name: userProfile.name, avatarUrl: userProfile.avatarUrl },
         comment: newComment,
         createdAt: new Date(),
+        rating: 0, // Comment is not a rating
     };
     await updateDoc(noteRef, { feedback: arrayUnion(commentData) });
-    setNote(prev => ({...prev, feedback: [...(prev.feedback || []), commentData]}));
+    const updatedFeedback = [...(note.feedback || []), commentData];
+    setNote(prev => ({...prev, feedback: updatedFeedback }));
     setNewComment("");
     toast({ title: "Comment Posted" });
   });
@@ -213,8 +219,13 @@ export default function NoteCard({ note: initialNote }: { note: Note }) {
         reportedBy: arrayUnion(user.uid),
         reportsCount: increment(1)
       });
+      
+      const optimisticNote = JSON.parse(JSON.stringify(note));
+      optimisticNote.reportedBy = [...(optimisticNote.reportedBy || []), user.uid];
+      optimisticNote.reportsCount++;
+      setNote(optimisticNote);
       setHasReported(true);
-      setNote(prev => ({...prev, reportsCount: prev.reportsCount + 1, reportedBy: [...(prev.reportedBy || []), user.uid]}));
+
       toast({ title: "Content Reported", description: "Thank you for your feedback. Admins will review this shortly." });
     } catch (error) {
       console.error("Error reporting note:", error);

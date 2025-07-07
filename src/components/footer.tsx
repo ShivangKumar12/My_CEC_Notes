@@ -62,7 +62,6 @@ export default function Footer() {
         <div className="mt-12 pt-8 border-t flex flex-col sm:flex-row justify-between items-center text-sm text-muted-foreground">
           <div className="text-center sm:text-left">
             <p>&copy; {new Date().getFullYear()} MyCECNotes. All Rights Reserved.</p>
-            <p>Designed & Developed by Shivang.</p>
           </div>
           <div className="flex space-x-6 mt-4 sm:mt-0">
             <Link href="#" className="hover:text-primary transition-colors">Terms of Service</Link>

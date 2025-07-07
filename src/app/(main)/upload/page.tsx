@@ -260,7 +260,7 @@ export default function UploadPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Semester</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={String(field.value)} disabled={isUploading}>
+                      <Select onValueChange={(value) => field.onChange(Number(value))} value={String(field.value) || ''} disabled={isUploading}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select a semester" />

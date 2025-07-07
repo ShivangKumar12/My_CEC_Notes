@@ -8,6 +8,7 @@ export interface UserProfile {
   avatarUrl: string;
   isAdmin?: boolean;
   noteCount?: number;
+  createdAt?: Date;
 }
 
 export interface Feedback {
@@ -19,7 +20,7 @@ export interface Feedback {
   };
   rating: number;
   comment?: string;
-  createdAt: Date | Timestamp;
+  createdAt: Date;
 }
 
 export interface Answer {
@@ -31,7 +32,7 @@ export interface Answer {
   };
   text: string;
   upvotes: number;
-  createdAt: Date | Timestamp;
+  createdAt: Date;
 }
 
 export interface Question {
@@ -43,7 +44,7 @@ export interface Question {
   };
   question: string;
   answers: Answer[];
-  createdAt: Date | Timestamp;
+  createdAt: Date;
 }
 
 export interface Note {
@@ -74,5 +75,5 @@ export interface Note {
   qna: Question[];
   reportedBy: string[];
   reportsCount: number;
-  createdAt: Date & Timestamp;
+  createdAt: Date;
 }

@@ -10,9 +10,10 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, Timestamp } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -24,12 +25,16 @@ export default function AdminUsersPage() {
       setIsLoading(true);
       try {
         const usersRef = collection(db, 'users');
-        const q = query(usersRef, orderBy('name'));
+        const q = query(usersRef, orderBy('createdAt', 'desc'));
         const querySnapshot = await getDocs(q);
-        const usersData = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-        } as UserProfile));
+        const usersData = querySnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            createdAt: (data.createdAt as Timestamp)?.toDate(),
+          } as UserProfile
+        });
         setUsers(usersData);
       } catch (error) {
         console.error("Error fetching users:", error);
@@ -39,7 +44,7 @@ export default function AdminUsersPage() {
       }
     };
     fetchUsers();
-  }, []);
+  }, [toast]);
 
   return (
     <div className="flex flex-col gap-8">
@@ -57,6 +62,7 @@ export default function AdminUsersPage() {
               <TableRow>
                 <TableHead>User</TableHead>
                 <TableHead>Email</TableHead>
+                <TableHead>Date Joined</TableHead>
                 <TableHead>Notes Uploaded</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -65,7 +71,7 @@ export default function AdminUsersPage() {
               {isLoading ? (
                 [...Array(5)].map((_, i) => (
                   <TableRow key={i}>
-                    <TableCell colSpan={4}><Skeleton className="h-10 w-full" /></TableCell>
+                    <TableCell colSpan={5}><Skeleton className="h-10 w-full" /></TableCell>
                   </TableRow>
                 ))
               ) : (
@@ -81,6 +87,9 @@ export default function AdminUsersPage() {
                       </div>
                     </TableCell>
                     <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                        {user.createdAt ? format(user.createdAt, 'PPP') : 'N/A'}
+                    </TableCell>
                     <TableCell>{user.noteCount || 0}</TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
