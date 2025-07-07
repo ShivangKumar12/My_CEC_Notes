@@ -9,7 +9,6 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ThumbsUp, ThumbsDown, Star, Download, Eye, Flag, User as UserIcon } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Textarea } from './ui/textarea';
@@ -123,20 +122,8 @@ export default function NoteCard({ note: initialNote }: { note: Note }) {
     toast({ title: "Comment Posted" });
   });
 
-  const getAiHint = (subject: string) => subject.toLowerCase().split(' ').slice(0, 2).join(' ');
-
   return (
     <Card className="flex flex-col h-full overflow-hidden transition-all duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1 group">
-      <div className="relative w-full aspect-video">
-        <Image
-          src={note.thumbnailUrl || 'https://placehold.co/400x300.png'}
-          alt={`Preview of ${note.title}`}
-          layout="fill"
-          objectFit="cover"
-          className="transition-transform duration-300 group-hover:scale-105"
-          data-ai-hint={getAiHint(note.subject)}
-        />
-      </div>
       <CardHeader>
         <div className="flex justify-between items-start gap-4">
           <CardTitle className="font-headline text-xl leading-tight">{note.title}</CardTitle>
