@@ -11,7 +11,7 @@ export interface UserProfile {
 }
 
 export interface Feedback {
-  id: string;
+  id:string;
   user: {
     id: string;
     name: string;
@@ -65,10 +65,14 @@ export interface Note {
   thumbnailUrl: string;
   likes: number;
   dislikes: number;
+  likedBy: string[];
+  dislikedBy: string[];
   averageRating: number;
   ratingsCount: number;
   downloads: number;
   feedback: Feedback[];
   qna: Question[];
+  reportedBy: string[];
+  reportsCount: number;
   createdAt: Date & Timestamp;
 }

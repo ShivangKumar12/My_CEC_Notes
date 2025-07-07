@@ -110,11 +110,15 @@ export default function UploadPage() {
         },
         likes: 0,
         dislikes: 0,
+        likedBy: [],
+        dislikedBy: [],
         averageRating: 0,
         ratingsCount: 0,
         downloads: 0,
         feedback: [],
         qna: [],
+        reportedBy: [],
+        reportsCount: 0,
         createdAt: serverTimestamp(),
       };
 

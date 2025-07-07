@@ -9,23 +9,22 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { MoreHorizontal, Pencil, Trash2, Eye, Flag } from 'lucide-react';
+import { MoreHorizontal, ShieldOff, Trash2, Eye } from 'lucide-react';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, orderBy, query, doc, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, orderBy, query, doc, deleteDoc, where, updateDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
-export default function AdminNotesPage() {
-  const [notes, setNotes] = useState<Note[]>([]);
+export default function AdminReportsPage() {
+  const [reportedNotes, setReportedNotes] = useState<Note[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  const fetchNotes = async () => {
+  const fetchReportedNotes = async () => {
     setIsLoading(true);
     try {
       const notesRef = collection(db, 'notes');
-      const q = query(notesRef, orderBy('createdAt', 'desc'));
+      const q = query(notesRef, where('reportsCount', '>', 0), orderBy('reportsCount', 'desc'));
       const querySnapshot = await getDocs(q);
       const notesData = querySnapshot.docs.map(doc => {
         const data = doc.data();
@@ -35,17 +34,17 @@ export default function AdminNotesPage() {
           createdAt: data.createdAt.toDate(),
         } as Note;
       });
-      setNotes(notesData);
+      setReportedNotes(notesData);
     } catch (error) {
-      console.error("Error fetching notes:", error);
-      toast({ title: 'Error', description: 'Could not fetch notes.', variant: 'destructive' });
+      console.error("Error fetching reported notes:", error);
+      toast({ title: 'Error', description: 'Could not fetch reported content.', variant: 'destructive' });
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchNotes();
+    fetchReportedNotes();
   }, []);
 
   const handleDelete = async (noteId: string) => {
@@ -53,21 +52,37 @@ export default function AdminNotesPage() {
     try {
       await deleteDoc(doc(db, 'notes', noteId));
       toast({ title: 'Success', description: 'Content deleted successfully.' });
-      fetchNotes(); // Refresh list
+      fetchReportedNotes(); // Refresh list
     } catch (error) {
       console.error("Error deleting note:", error);
       toast({ title: 'Error', description: 'Failed to delete content.', variant: 'destructive' });
     }
   };
+  
+  const handleDismiss = async (noteId: string) => {
+    if (!window.confirm("Are you sure you want to dismiss all reports for this content?")) return;
+    try {
+        const noteRef = doc(db, 'notes', noteId);
+        await updateDoc(noteRef, {
+            reportedBy: [],
+            reportsCount: 0
+        });
+        toast({ title: 'Success', description: 'Reports dismissed.' });
+        fetchReportedNotes(); // Refresh list
+    } catch (error) {
+        console.error("Error dismissing reports:", error);
+        toast({ title: 'Error', description: 'Failed to dismiss reports.', variant: 'destructive' });
+    }
+  };
 
   return (
     <div className="flex flex-col gap-8">
-      <h1 className="text-3xl font-bold">Manage Content</h1>
+      <h1 className="text-3xl font-bold">Manage Reported Content</h1>
       <Card>
         <CardHeader>
-          <CardTitle>All Content</CardTitle>
+          <CardTitle>Reported Content</CardTitle>
           <CardDescription>
-            A list of all notes and question papers uploaded to the platform.
+            Review content that has been reported by users for being fake, inappropriate, or irrelevant.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -75,11 +90,9 @@ export default function AdminNotesPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Title</TableHead>
-                <TableHead>Category</TableHead>
                 <TableHead>Uploader</TableHead>
                 <TableHead>Subject</TableHead>
-                <TableHead>Downloads</TableHead>
-                <TableHead>Rating</TableHead>
+                <TableHead className="text-center">Reports</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -87,36 +100,19 @@ export default function AdminNotesPage() {
               {isLoading ? (
                 [...Array(5)].map((_, i) => (
                   <TableRow key={i}>
-                    <TableCell colSpan={7}><Skeleton className="h-8 w-full" /></TableCell>
+                    <TableCell colSpan={5}><Skeleton className="h-8 w-full" /></TableCell>
                   </TableRow>
                 ))
+              ) : reportedNotes.length === 0 ? (
+                 <TableRow>
+                    <TableCell colSpan={5} className="h-24 text-center">
+                      No reported content found.
+                    </TableCell>
+                  </TableRow>
               ) : (
-                notes.map((note) => (
+                reportedNotes.map((note) => (
                   <TableRow key={note.id}>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-2">
-                        {note.reportsCount > 0 && (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger>
-                                <Flag className="h-4 w-4 text-destructive" />
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>{note.reportsCount} report(s)</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        )}
-                        <span>{note.title}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {note.category === 'questionPaper' ? (
-                        <Badge variant="destructive">{note.paperType}</Badge>
-                      ) : (
-                        <Badge variant="secondary">Note</Badge>
-                      )}
-                    </TableCell>
+                    <TableCell className="font-medium">{note.title}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Avatar className="h-8 w-8">
@@ -127,8 +123,7 @@ export default function AdminNotesPage() {
                       </div>
                     </TableCell>
                     <TableCell><Badge variant="outline">{note.subject}</Badge></TableCell>
-                    <TableCell>{note.downloads}</TableCell>
-                    <TableCell>{note.averageRating.toFixed(1)} ({note.ratingsCount})</TableCell>
+                    <TableCell className="text-center font-bold text-destructive">{note.reportsCount}</TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -138,9 +133,9 @@ export default function AdminNotesPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
-                            <Pencil className="mr-2 h-4 w-4" />
-                            <span>Edit</span>
+                           <DropdownMenuItem onClick={() => handleDismiss(note.id)}>
+                            <ShieldOff className="mr-2 h-4 w-4" />
+                            <span>Dismiss Reports</span>
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => window.open(note.fileUrl, '_blank')}>
                             <Eye className="mr-2 h-4 w-4" />

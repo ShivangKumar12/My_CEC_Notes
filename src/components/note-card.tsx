@@ -14,14 +14,14 @@ import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Textarea } from './ui/textarea';
 import { useApp } from '@/hooks/use-app';
 import { useToast } from '@/hooks/use-toast';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { Separator } from './ui/separator';
 import { ScrollArea } from './ui/scroll-area';
 import { formatDistanceToNow } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { db } from '@/lib/firebase';
-import { doc, updateDoc, increment, arrayUnion, arrayRemove, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, increment, arrayUnion, arrayRemove, getDoc, writeBatch } from 'firebase/firestore';
 
 function StarRating({ rating, totalStars = 5, onRate, interactive = false }: { rating: number; totalStars?: number; onRate?: (rating: number) => void; interactive?: boolean; }) {
   const [hoverRating, setHoverRating] = useState(0);
@@ -51,11 +51,23 @@ export default function NoteCard({ note: initialNote }: { note: Note }) {
   const { user, userProfile } = useApp();
   const { toast } = useToast();
   const [note, setNote] = useState(initialNote);
+  const [userInteraction, setUserInteraction] = useState<'liked' | 'disliked' | null>(null);
+  const [hasReported, setHasReported] = useState(false);
 
   const [currentRating, setCurrentRating] = useState(0);
   const [newComment, setNewComment] = useState("");
   const [newQuestion, setNewQuestion] = useState("");
   const [newAnswers, setNewAnswers] = useState<{[key: string]: string}>({});
+
+  useEffect(() => {
+    if (user && note) {
+      setUserInteraction(note.likedBy?.includes(user.uid) ? 'liked' : note.dislikedBy?.includes(user.uid) ? 'disliked' : null);
+      setHasReported(note.reportedBy?.includes(user.uid));
+    } else {
+      setUserInteraction(null);
+      setHasReported(false);
+    }
+  }, [user, note]);
 
   const handleAuthAction = (action: () => void, message?: string) => {
     if (!user) {
@@ -67,6 +79,61 @@ export default function NoteCard({ note: initialNote }: { note: Note }) {
       return;
     }
     action();
+  };
+
+  const handleVote = async (voteType: 'like' | 'dislike') => {
+    handleAuthAction(async () => {
+      if (!user) return;
+      const noteRef = doc(db, 'notes', note.id);
+      
+      const batch = writeBatch(db);
+
+      const userHasLiked = note.likedBy?.includes(user.uid);
+      const userHasDisliked = note.dislikedBy?.includes(user.uid);
+      
+      // Create optimistic update objects
+      const optimisticNote = JSON.parse(JSON.stringify(note));
+
+      if (voteType === 'like') {
+        if (userHasLiked) { // --- UNLIKE ---
+          batch.update(noteRef, { likes: increment(-1), likedBy: arrayRemove(user.uid) });
+          optimisticNote.likes--;
+          optimisticNote.likedBy = optimisticNote.likedBy.filter((id: string) => id !== user.uid);
+          setUserInteraction(null);
+        } else { // --- LIKE ---
+          batch.update(noteRef, { likes: increment(1), likedBy: arrayUnion(user.uid) });
+          optimisticNote.likes++;
+          optimisticNote.likedBy.push(user.uid);
+          if (userHasDisliked) {
+            batch.update(noteRef, { dislikes: increment(-1), dislikedBy: arrayRemove(user.uid) });
+            optimisticNote.dislikes--;
+            optimisticNote.dislikedBy = optimisticNote.dislikedBy.filter((id: string) => id !== user.uid);
+          }
+          setUserInteraction('liked');
+        }
+      } else { // voteType is 'dislike'
+        if (userHasDisliked) { // --- UNDISLIKE ---
+          batch.update(noteRef, { dislikes: increment(-1), dislikedBy: arrayRemove(user.uid) });
+          optimisticNote.dislikes--;
+          optimisticNote.dislikedBy = optimisticNote.dislikedBy.filter((id: string) => id !== user.uid);
+          setUserInteraction(null);
+        } else { // --- DISLIKE ---
+          batch.update(noteRef, { dislikes: increment(1), dislikedBy: arrayUnion(user.uid) });
+          optimisticNote.dislikes++;
+          optimisticNote.dislikedBy.push(user.uid);
+          if (userHasLiked) {
+            batch.update(noteRef, { likes: increment(-1), likedBy: arrayRemove(user.uid) });
+            optimisticNote.likes--;
+            optimisticNote.likedBy = optimisticNote.likedBy.filter((id: string) => id !== user.uid);
+          }
+          setUserInteraction('disliked');
+        }
+      }
+      
+      setNote(optimisticNote); // Optimistic UI update
+      await batch.commit();
+
+    }, "You must be logged in to vote.");
   };
 
   const handleDownload = async (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -121,6 +188,27 @@ export default function NoteCard({ note: initialNote }: { note: Note }) {
     setNewComment("");
     toast({ title: "Comment Posted" });
   });
+  
+  const handleReport = () => {
+    handleAuthAction(async () => {
+        if (!user) return;
+        if (hasReported) {
+            toast({ title: "Already Reported", description: "You have already reported this content." });
+            return;
+        }
+        if (window.confirm("Are you sure you want to report this content as inappropriate or fake?")) {
+            const noteRef = doc(db, 'notes', note.id);
+            await updateDoc(noteRef, {
+                reportedBy: arrayUnion(user.uid),
+                reportsCount: increment(1)
+            });
+            setHasReported(true);
+            setNote(prev => ({...prev, reportsCount: prev.reportsCount + 1, reportedBy: [...(prev.reportedBy || []), user.uid]}));
+            toast({ title: "Content Reported", description: "Thank you for your feedback. Admins will review this shortly." });
+        }
+    }, "You must be logged in to report content.");
+  }
+
 
   return (
     <Card className="flex flex-col h-full overflow-hidden transition-all duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1 group">
@@ -159,12 +247,11 @@ export default function NoteCard({ note: initialNote }: { note: Note }) {
       </CardContent>
       <CardFooter className="grid grid-cols-2 gap-2">
         <div className="flex items-center gap-2">
-            {/* Like/Dislike functionality can be complex with Firestore rules, simplified for now */}
-            <Button variant="outline" size="sm" className="flex-1" disabled>
-                <ThumbsUp className="h-4 w-4 mr-1" /> {note.likes}
+            <Button variant={userInteraction === 'liked' ? 'default' : 'outline'} size="sm" className="flex-1" onClick={() => handleVote('like')}>
+                <ThumbsUp className="h-4 w-4 mr-1" /> {note.likes || 0}
             </Button>
-            <Button variant="outline" size="sm" className="flex-1" disabled>
-                <ThumbsDown className="h-4 w-4 mr-1" /> {note.dislikes}
+            <Button variant={userInteraction === 'disliked' ? 'destructive' : 'outline'} size="sm" className="flex-1" onClick={() => handleVote('dislike')}>
+                <ThumbsDown className="h-4 w-4 mr-1" /> {note.dislikes || 0}
             </Button>
         </div>
         <div className="flex items-center gap-2">
@@ -182,6 +269,18 @@ export default function NoteCard({ note: initialNote }: { note: Note }) {
                     <div className="grid md:grid-cols-5 gap-6 flex-grow min-h-0">
                       <div className="md:col-span-3 relative h-full rounded-lg overflow-hidden border">
                         <iframe src={note.fileUrl} className="w-full h-full" title="File Preview"></iframe>
+                         <TooltipProvider>
+                           <Tooltip>
+                              <TooltipTrigger asChild>
+                                  <Button variant="destructive" size="icon" className="absolute top-2 right-2 z-10 h-8 w-8" onClick={handleReport} disabled={hasReported}>
+                                      <Flag className="h-4 w-4" />
+                                  </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                  <p>{hasReported ? 'You have reported this' : 'Report this content'}</p>
+                              </TooltipContent>
+                           </Tooltip>
+                         </TooltipProvider>
                       </div>
                       <div className="md:col-span-2 flex flex-col h-full">
                         <Tabs defaultValue="discussion" className="flex flex-col h-full">

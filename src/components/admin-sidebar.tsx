@@ -1,3 +1,4 @@
+
 "use client"
 
 import {
@@ -11,7 +12,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { BookOpenCheck, FileText, GraduationCap, LayoutDashboard, Library, Users, BookCopy, Users2, LogOut } from "lucide-react"
+import { BookOpenCheck, FileText, GraduationCap, LayoutDashboard, Library, Users, BookCopy, Users2, LogOut, Flag } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useApp } from "@/hooks/use-app"
@@ -20,6 +21,7 @@ const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/notes", label: "Content", icon: FileText },
   { href: "/admin/users", label: "Users", icon: Users },
+  { href: "/admin/reports", label: "Reports", icon: Flag },
   { href: "/admin/subjects", label: "Subjects", icon: Library },
   { href: "/admin/semesters", label: "Semesters", icon: GraduationCap },
   { href: "/admin/courses", label: "Courses", icon: BookCopy },
