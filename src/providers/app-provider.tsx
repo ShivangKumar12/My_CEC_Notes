@@ -8,6 +8,11 @@ import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, signI
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 
+type AdminLoginResult = {
+  success: boolean;
+  reason?: 'unauthorized' | 'invalid-credentials';
+};
+
 interface AppContextType {
   user: FirebaseUser | null;
   userProfile: UserProfile | null;
@@ -15,7 +20,7 @@ interface AppContextType {
   isLoading: boolean;
   login: () => void;
   logout: () => void;
-  adminLogin: (email: string, password: string) => Promise<boolean>;
+  adminLogin: (email: string, password: string) => Promise<AdminLoginResult>;
   adminLogout: () => void;
 }
 
@@ -103,11 +108,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   };
   
-  const adminLogin = async (email: string, password: string): Promise<boolean> => {
+  const adminLogin = async (email: string, password: string): Promise<AdminLoginResult> => {
     if (!auth) {
       console.error("Firebase not initialized. Cannot log in.");
       toast({ title: "Configuration Error", description: "Firebase is not configured. Please check your .env.local file.", variant: "destructive" });
-      return false;
+      return { success: false, reason: 'invalid-credentials' };
     }
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -117,15 +122,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const userSnap = await getDoc(userRef);
 
       if (userSnap.exists() && userSnap.data().isAdmin) {
-        return true;
+        return { success: true };
       } else {
         // If user is not an admin, sign them out immediately.
         await signOut(auth);
-        return false;
+        return { success: false, reason: 'unauthorized' };
       }
     } catch (error) {
       console.error("Admin login error:", error);
-      return false;
+      return { success: false, reason: 'invalid-credentials' };
     }
   };
   

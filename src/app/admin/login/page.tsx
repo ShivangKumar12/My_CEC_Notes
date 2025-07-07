@@ -24,19 +24,27 @@ export default function AdminLoginPage() {
     setIsLoading(true);
 
     try {
-      const success = await adminLogin(email, password);
-      if (success) {
+      const result = await adminLogin(email, password);
+      if (result.success) {
         toast({
           title: 'Login Successful',
           description: 'Welcome back, Admin!',
         });
         router.replace('/admin/dashboard');
       } else {
-        toast({
-          title: 'Login Failed',
-          description: 'Invalid email or password.',
-          variant: 'destructive',
-        });
+        if (result.reason === 'unauthorized') {
+            toast({
+              title: 'Authorization Failed',
+              description: 'You do not have permission to access the admin panel.',
+              variant: 'destructive',
+            });
+        } else {
+            toast({
+              title: 'Login Failed',
+              description: 'Invalid email or password.',
+              variant: 'destructive',
+            });
+        }
       }
     } catch (error: any) {
       toast({
