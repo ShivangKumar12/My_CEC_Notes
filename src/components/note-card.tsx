@@ -88,13 +88,13 @@ export default function NoteCard({ note: initialNote }: { note: Note }) {
       
       const batch = writeBatch(db);
 
-      const userHasLiked = note.likedBy?.includes(user.uid);
-      const userHasDisliked = note.dislikedBy?.includes(user.uid);
-      
       const optimisticNote = JSON.parse(JSON.stringify(note));
 
       if (!optimisticNote.likedBy) optimisticNote.likedBy = [];
       if (!optimisticNote.dislikedBy) optimisticNote.dislikedBy = [];
+
+      const userHasLiked = optimisticNote.likedBy.includes(user.uid);
+      const userHasDisliked = optimisticNote.dislikedBy.includes(user.uid);
 
       if (voteType === 'like') {
         if (userHasLiked) { 
@@ -213,10 +213,30 @@ export default function NoteCard({ note: initialNote }: { note: Note }) {
 
 
   return (
-    <Card className="flex flex-col h-full overflow-hidden transition-all duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1 group">
+    <Card className="relative flex flex-col h-full overflow-hidden transition-all duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1 group">
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant={hasReported ? "destructive" : "ghost"}
+              size="icon"
+              className="absolute top-2 right-2 z-10 h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+              onClick={handleReport}
+              disabled={hasReported}
+            >
+              <Flag className="h-4 w-4" />
+              <span className="sr-only">Report</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{hasReported ? 'You have reported this' : 'Report this content'}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+
       <CardHeader>
         <div className="flex justify-between items-start gap-4">
-          <CardTitle className="font-headline text-xl leading-tight">{note.title}</CardTitle>
+          <CardTitle className="font-headline text-xl leading-tight pr-8">{note.title}</CardTitle>
         </div>
         <CardDescription className="flex flex-wrap gap-2">
           {note.category === 'questionPaper' && note.paperType && (
@@ -342,20 +362,6 @@ export default function NoteCard({ note: initialNote }: { note: Note }) {
                 </div>
               </PopoverContent>
             </Popover>
-
-            <TooltipProvider>
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button variant={hasReported ? "destructive" : "outline"} size="icon" className="h-9 w-9" onClick={handleReport} disabled={hasReported}>
-                            <Flag className="h-4 w-4" />
-                            <span className="sr-only">Report</span>
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                        <p>{hasReported ? 'You have reported this' : 'Report this content'}</p>
-                    </TooltipContent>
-                </Tooltip>
-            </TooltipProvider>
         </div>
       </CardFooter>
       <div className="p-4 pt-0 text-center">
