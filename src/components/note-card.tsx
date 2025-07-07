@@ -4,10 +4,10 @@
 import type { Note, UserProfile } from '@/lib/types';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ThumbsUp, ThumbsDown, Star, Download, Eye, Flag, User as UserIcon } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, Star, Download, Eye, Flag } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
@@ -19,9 +19,10 @@ import { Separator } from './ui/separator';
 import { ScrollArea } from './ui/scroll-area';
 import { formatDistanceToNow } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { db } from '@/lib/firebase';
 import { doc, updateDoc, increment, arrayUnion, arrayRemove, getDoc, writeBatch } from 'firebase/firestore';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+
 
 function StarRating({ rating, totalStars = 5, onRate, interactive = false }: { rating: number; totalStars?: number; onRate?: (rating: number) => void; interactive?: boolean; }) {
   const [hoverRating, setHoverRating] = useState(0);
@@ -56,8 +57,6 @@ export default function NoteCard({ note: initialNote }: { note: Note }) {
 
   const [currentRating, setCurrentRating] = useState(0);
   const [newComment, setNewComment] = useState("");
-  const [newQuestion, setNewQuestion] = useState("");
-  const [newAnswers, setNewAnswers] = useState<{[key: string]: string}>({});
 
   useEffect(() => {
     if (user && note) {
@@ -191,48 +190,76 @@ export default function NoteCard({ note: initialNote }: { note: Note }) {
     toast({ title: "Comment Posted" });
   });
   
-  const handleReport = () => {
-    handleAuthAction(async () => {
-        if (!user) return;
-        if (hasReported) {
-            toast({ title: "Already Reported", description: "You have already reported this content." });
-            return;
-        }
-        if (window.confirm("Are you sure you want to report this content as inappropriate or fake?")) {
-            const noteRef = doc(db, 'notes', note.id);
-            await updateDoc(noteRef, {
-                reportedBy: arrayUnion(user.uid),
-                reportsCount: increment(1)
-            });
-            setHasReported(true);
-            setNote(prev => ({...prev, reportsCount: prev.reportsCount + 1, reportedBy: [...(prev.reportedBy || []), user.uid]}));
-            toast({ title: "Content Reported", description: "Thank you for your feedback. Admins will review this shortly." });
-        }
-    }, "You must be logged in to report content.");
-  }
+  const handleReportClick = (e: React.MouseEvent) => {
+    if (!user) {
+      e.preventDefault();
+      handleAuthAction(() => {}, "You must be logged in to report content.");
+    }
+  };
+
+  const confirmReport = async () => {
+    if (!user) {
+      toast({ title: "Login Required", description: "You must be logged in to report content.", variant: "destructive" });
+      return;
+    }
+    if (hasReported) {
+      toast({ title: "Already Reported", description: "You have already reported this content." });
+      return;
+    }
+    
+    try {
+      const noteRef = doc(db, 'notes', note.id);
+      await updateDoc(noteRef, {
+        reportedBy: arrayUnion(user.uid),
+        reportsCount: increment(1)
+      });
+      setHasReported(true);
+      setNote(prev => ({...prev, reportsCount: prev.reportsCount + 1, reportedBy: [...(prev.reportedBy || []), user.uid]}));
+      toast({ title: "Content Reported", description: "Thank you for your feedback. Admins will review this shortly." });
+    } catch (error) {
+      console.error("Error reporting note:", error);
+      toast({ title: "Error", description: "An error occurred while reporting.", variant: "destructive"});
+    }
+  };
 
 
   return (
     <Card className="relative flex flex-col h-full overflow-hidden transition-all duration-300 ease-in-out hover:shadow-xl hover:-translate-y-1 group">
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant={hasReported ? "destructive" : "ghost"}
-              size="icon"
-              className="absolute top-2 right-2 z-10 h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-              onClick={handleReport}
-              disabled={hasReported}
-            >
-              <Flag className="h-4 w-4" />
-              <span className="sr-only">Report</span>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>{hasReported ? 'You have reported this' : 'Report this content'}</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      <AlertDialog>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant={hasReported ? "destructive" : "ghost"}
+                  size="icon"
+                  className="absolute top-2 right-2 z-10 h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                  onClick={handleReportClick}
+                  disabled={hasReported}
+                >
+                  <Flag className="h-4 w-4" />
+                  <span className="sr-only">Report</span>
+                </Button>
+              </AlertDialogTrigger>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{hasReported ? 'You have reported this' : 'Report this content'}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to report this content?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action will flag the content for review by an administrator for being fake, inappropriate, or irrelevant. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmReport} className={buttonVariants({ variant: "destructive" })}>Report</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <CardHeader>
         <div className="flex justify-between items-start gap-4">
