@@ -162,7 +162,7 @@ public/ → Static assets (e.g. favicon, images)
 - Batches
 ---
 
-## 👨‍💻 Built With ❤️ by Shivang Kumar, Shiv Pratap Singh Chauhan
+## 👨‍💻 Built With ❤️ by Shivang Kumar
 
 This project was designed and developed within **Firebase Studio**, aiming to deliver a clean, scalable, and student-focused experience.
 
